@@ -1,0 +1,68 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-lato);
+  --font-mono: var(--font-lato);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+/* Base font settings */
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-lato), Arial, Helvetica, sans-serif;
+  font-size: 0.8em;
+}
+
+/* Header styles */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-ronin), sans-serif;
+}
+
+/* Utility classes for fonts */
+.font-ronin {
+  font-family: var(--font-ronin), sans-serif;
+}
+
+.font-karla {
+  font-family: var(--font-karla), sans-serif;
+}
+
+.font-lato {
+  font-family: var(--font-lato), sans-serif;
+}
+
+/* Title and subtitle styles */
+.title {
+  font-family: var(--font-karla), sans-serif;
+  font-weight: 700;
+}
+
+.subtitle {
+  font-family: var(--font-karla), sans-serif;
+  font-weight: 500;
+}
+
+/* Hide scrollbars while maintaining functionality */
+.scrollbar-none {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none; /* Chrome, Safari and Opera */
+}
+
+/* Remove existing scrollbar styles as they're no longer needed */
