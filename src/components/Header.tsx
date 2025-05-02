@@ -71,7 +71,7 @@ export default function Header() {
             ref={finishedButtonRef}
             variant="ghost"
             onClick={handleOpenFinished}
-            className="text-white hover:text-white ring-1 ring-gray-500 hover:bg-gray-500 hover:ring-gray-300 font-ronin text-5xl font-bold p-1"
+            className="text-white font-ronin text-5xl font-bold p-1 ring-1 ring-gray-500 hover:bg-gray-100/30 hover:ring-gray-300"
           >
             <CircleCheckBig className="h-6 w-6" />
           </Button>
@@ -95,7 +95,7 @@ export default function Header() {
           ref={finishedButtonRef}
           variant="ghost"
           onClick={handleOpenFinished}
-          className="text-white hover:text-white ring-1 ring-gray-500 hover:bg-gray-500 hover:ring-gray-300 font-ronin text-5xl font-bold p-1"
+          className="text-white font-ronin text-5xl font-bold p-1 ring-1 ring-gray-500 hover:bg-gray-100/30 hover:ring-gray-300"
         >
           <CircleCheckBig className="h-6 w-6" />
         </Button>

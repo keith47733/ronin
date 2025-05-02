@@ -33,8 +33,38 @@ interface TodoContextType {
   ) => void;
 }
 
+// Create a type for the quadrant state
+type QuadrantState = Record<QuadrantKey, Todo[]>;
+
 // Create the context with undefined as default value
 const TodoContext = createContext<TodoContextType | undefined>(undefined);
+
+/**
+ * Custom hook to calculate quadrants from todos
+ * @param todos - Array of todos
+ * @returns Record of todos organized by quadrant
+ */
+const useQuadrants = (todos: Todo[]): QuadrantState => {
+  return useMemo(() => {
+    const initialQuadrants: QuadrantState = {
+      inbox: [],
+      urgentImportant: [],
+      notUrgentImportant: [],
+      urgentNotImportant: [],
+      notUrgentNotImportant: [],
+      finished: [],
+    };
+
+    return todos.reduce((acc, todo) => {
+      if (todo.completed) {
+        acc.finished.push(todo);
+      } else {
+        acc[todo.quadrant].push(todo);
+      }
+      return acc;
+    }, initialQuadrants);
+  }, [todos]);
+};
 
 /**
  * TodoProvider component that wraps the application and provides todo management functionality
@@ -43,32 +73,7 @@ const TodoContext = createContext<TodoContextType | undefined>(undefined);
 export function TodoProvider({ children }: { children: React.ReactNode }) {
   // Main state for all todos
   const [todos, setTodos] = useState<Todo[]>([]);
-
-  /**
-   * Memoized calculation of todos organized by quadrant
-   * Prevents unnecessary recalculations on every render
-   */
-  const quadrants = useMemo(
-    () => ({
-      inbox: todos.filter(
-        (todo) => !todo.completed && todo.quadrant === "inbox"
-      ),
-      urgentImportant: todos.filter(
-        (todo) => !todo.completed && todo.quadrant === "urgentImportant"
-      ),
-      notUrgentImportant: todos.filter(
-        (todo) => !todo.completed && todo.quadrant === "notUrgentImportant"
-      ),
-      urgentNotImportant: todos.filter(
-        (todo) => !todo.completed && todo.quadrant === "urgentNotImportant"
-      ),
-      notUrgentNotImportant: todos.filter(
-        (todo) => !todo.completed && todo.quadrant === "notUrgentNotImportant"
-      ),
-      finished: todos.filter((todo) => todo.completed),
-    }),
-    [todos]
-  );
+  const quadrants = useQuadrants(todos);
 
   /**
    * Adds a new todo to the list
@@ -254,25 +259,10 @@ export function TodoProvider({ children }: { children: React.ReactNode }) {
    */
   const moveTodo = useCallback(
     (todo: Todo, fromQuadrant: QuadrantKey, toQuadrant: QuadrantKey) => {
-      if (fromQuadrant === toQuadrant) return; // Prevent unnecessary updates
-
       setTodos((prev) =>
-        prev.map((t) => {
-          if (t.id === todo.id) {
-            const updatedTodo = {
-              ...t,
-              quadrant: toQuadrant,
-            };
-            console.log("Moving todo:", {
-              id: updatedTodo.id,
-              fromQuadrant,
-              toQuadrant,
-              currentQuadrant: updatedTodo.quadrant,
-            });
-            return updatedTodo;
-          }
-          return t;
-        })
+        prev.map((t) =>
+          t.id === todo.id ? { ...t, quadrant: toQuadrant } : t
+        )
       );
     },
     []

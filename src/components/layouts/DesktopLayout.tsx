@@ -1,10 +1,45 @@
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import { TodoList } from "@/components/TodoList";
 import { Quadrant } from "@/components/Quadrant";
 import { useTodo } from "@/context/TodoContext";
 import Image from "next/image";
+import { QuadrantKey } from "@/types/todo";
+
+interface QuadrantConfig {
+  title: string;
+  subtitle: string;
+  quadrant: QuadrantKey;
+  bgColor: string;
+}
+
+const QUADRANT_CONFIG: QuadrantConfig[] = [
+  {
+    title: "DO NOW",
+    subtitle: "Urgent & Important",
+    quadrant: "urgentImportant",
+    bgColor: "bg-green-50",
+  },
+  {
+    title: "SCHEDULE",
+    subtitle: "Not Urgent & Important",
+    quadrant: "notUrgentImportant",
+    bgColor: "bg-blue-50",
+  },
+  {
+    title: "DELEGATE",
+    subtitle: "Urgent & Not Important",
+    quadrant: "urgentNotImportant",
+    bgColor: "bg-orange-50",
+  },
+  {
+    title: "DELETE",
+    subtitle: "Not Urgent & Not Important",
+    quadrant: "notUrgentNotImportant",
+    bgColor: "bg-red-50",
+  },
+];
 
 /**
  * DesktopLayout Component
@@ -18,6 +53,20 @@ import Image from "next/image";
 export function DesktopLayout() {
   const { quadrants, moveTodo } = useTodo();
 
+  const renderQuadrants = useMemo(() => {
+    return QUADRANT_CONFIG.map((config) => (
+      <Quadrant
+        key={config.quadrant}
+        title={config.title}
+        subtitle={config.subtitle}
+        todos={quadrants[config.quadrant]}
+        onDrop={(data) => moveTodo(data.todo, data.fromQuadrant, config.quadrant)}
+        quadrant={config.quadrant}
+        bgColor={config.bgColor}
+      />
+    ));
+  }, [quadrants, moveTodo]);
+
   return (
     <div className="flex flex-row h-[calc(100vh-4rem)] overflow-hidden">
       {/* Left Panel - Inbox */}
@@ -27,12 +76,17 @@ export function DesktopLayout() {
 
       {/* Right Panel - Quadrants */}
       <div className="w-2/3 h-full p-3">
-        <div className="grid grid-cols-2 grid-rows-2 gap-3 h-full relative">
+        <div className="h-full relative">
+          {/* Grid Container */}
+          <div className="grid grid-cols-2 grid-rows-2 gap-3 h-full">
+            {renderQuadrants}
+          </div>
+
           {/* Vertical Divider */}
-          <div className="absolute left-1/2 top-0 bottom-0 w-[2px] bg-black -translate-x-1/2"></div>
+          <div className="absolute left-1/2 top-0 bottom-0 w-[2px] bg-black/25 -translate-x-1/2 pointer-events-none"></div>
 
           {/* Horizontal Divider */}
-          <div className="absolute top-1/2 left-0 right-0 h-[2px] bg-black -translate-y-1/2"></div>
+          <div className="absolute top-1/2 left-0 right-0 h-[2px] bg-black/25 -translate-y-1/2 z-10 pointer-events-none"></div>
 
           {/* Centered Logo */}
           <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
@@ -41,54 +95,10 @@ export function DesktopLayout() {
               alt="Ronin Logo"
               width={90}
               height={90}
-              className="opacity-90 blur-[15%] filter brightness-0 rounded-md"
+              className="opacity-90 blur-[15%] filter brightness-0 rounded-md transition-transform duration-300 hover:scale-[1.35]"
+              priority
             />
           </div>
-
-          {/* Quadrants */}
-          <Quadrant
-            title="DO NOW"
-            subtitle="Urgent & Important"
-            todos={quadrants.urgentImportant}
-            onDrop={(data) =>
-              moveTodo(data.todo, data.fromQuadrant, "urgentImportant")
-            }
-            quadrant="urgentImportant"
-            bgColor="bg-green-50"
-          />
-
-          <Quadrant
-            title="SCHEDULE"
-            subtitle="Not Urgent & Important"
-            todos={quadrants.notUrgentImportant}
-            onDrop={(data) =>
-              moveTodo(data.todo, data.fromQuadrant, "notUrgentImportant")
-            }
-            quadrant="notUrgentImportant"
-            bgColor="bg-blue-50"
-          />
-
-          <Quadrant
-            title="DELEGATE"
-            subtitle="Urgent & Not Important"
-            todos={quadrants.urgentNotImportant}
-            onDrop={(data) =>
-              moveTodo(data.todo, data.fromQuadrant, "urgentNotImportant")
-            }
-            quadrant="urgentNotImportant"
-            bgColor="bg-orange-50"
-          />
-
-          <Quadrant
-            title="DELETE"
-            subtitle="Not Urgent & Not Important"
-            todos={quadrants.notUrgentNotImportant}
-            onDrop={(data) =>
-              moveTodo(data.todo, data.fromQuadrant, "notUrgentNotImportant")
-            }
-            quadrant="notUrgentNotImportant"
-            bgColor="bg-red-50"
-          />
         </div>
       </div>
     </div>

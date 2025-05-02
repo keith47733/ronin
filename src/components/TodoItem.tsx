@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useRef, useState, useEffect, useCallback, useMemo } from "react";
-import { Todo, QuadrantKey } from "@/types/todo";
+import { Todo, QuadrantKey, ActiveQuadrantKey } from "@/types/todo";
 import { useTodo } from "@/context/TodoContext";
 import { useModal } from "@/context/ModalContext";
 import { useAnimation } from "@/context/AnimationContext";
@@ -14,22 +14,51 @@ import {
   CircleCheck,
   CircleCheckBig,
 } from "lucide-react";
-import { Tooltip } from "@/components/ui/Tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/Tooltip";
 import { format, isToday, isBefore } from "date-fns";
 
 /**
  * Props interface for the TodoItem component
  */
 interface TodoItemProps {
-  todo: Todo; // The todo item to display
-  quadrant: QuadrantKey; // The quadrant this todo belongs to
-  onDragStart: (
-    todo: Todo,
-    quadrant: QuadrantKey
-  ) => (e: React.DragEvent<HTMLDivElement>) => void; // Handler for drag start events
+  todo: Todo;
+  quadrant: QuadrantKey;
+  onDragStart: (todo: Todo) => (e: React.DragEvent<HTMLDivElement>) => void;
   onDragEnd: (e: React.DragEvent<HTMLDivElement>) => void;
-  onRestore?: (id: string) => void; // Optional handler for restore events
+  onDrop: (e: React.DragEvent<HTMLDivElement>) => void;
+  onDragOver: (e: React.DragEvent<HTMLDivElement>) => void;
+  onDragLeave: (e: React.DragEvent<HTMLDivElement>) => void;
+  onDelete: (id: string) => void;
+  onToggle: (id: string) => void;
+  onToggleWaiting: (id: string) => void;
+  onUpdateText: (id: string, text: string) => void;
+  onUpdateDueDate: (id: string, date: Date | undefined) => void;
+  onUpdateNote: (id: string, note: string) => void;
 }
+
+// Add these styles near the top of the file, after the imports
+const iconStyles = {
+  base: "p-2 rounded-full transition-all duration-300 border-2 border-transparent flex items-center justify-center",
+  active: {
+    calendar: "text-blue-500 bg-blue-100/80 hover:bg-blue-200/80 hover:border-blue-300",
+    note: "text-purple-500 bg-purple-100/80 hover:bg-purple-200/80 hover:border-purple-300",
+    waiting: "text-orange-500 bg-orange-100/80 hover:bg-orange-200/80 hover:border-orange-300",
+    check: "text-green-600 transform hover:scale-[1.25]",
+    delete: "text-red-500 transform hover:scale-[1.25]",
+  },
+  inactive: "text-gray-400 hover:bg-gray-100/80",
+  inactiveWithScale: "text-gray-400 hover:bg-gray-100/80 transform hover:scale-[1.25]",
+  glow: {
+    calendar: "drop-shadow-[0_0_8px_rgba(59,130,246,0.2)]",
+    note: "drop-shadow-[0_0_8px_rgba(168,85,247,0.2)]",
+    waiting: "drop-shadow-[0_0_8px_rgba(249,115,22,0.2)]",
+  },
+  tooltip: {
+    calendar: "bg-blue-50 text-blue-800 [&>div:last-child]:border-t-blue-50 [&>div:last-child]:bg-blue-50",
+    note: "bg-purple-50 text-purple-800 [&>div:last-child]:border-t-purple-50 [&>div:last-child]:bg-purple-50",
+    waiting: "bg-orange-50 text-orange-800 [&>div:last-child]:border-t-orange-50 [&>div:last-child]:bg-orange-50",
+  },
+};
 
 /**
  * TodoItem Component
@@ -59,10 +88,17 @@ export default function TodoItem({
   quadrant,
   onDragStart,
   onDragEnd,
-  onRestore,
+  onDrop,
+  onDragOver,
+  onDragLeave,
+  onDelete,
+  onToggle,
+  onToggleWaiting,
+  onUpdateText,
+  onUpdateDueDate,
+  onUpdateNote,
 }: TodoItemProps) {
   // Context hooks for state management
-  // These provide access to the global todo state and actions
   const {
     toggleTodo,
     permanentlyDeleteTodo,
@@ -114,10 +150,9 @@ export default function TodoItem({
 
   // Memoize event handlers
   const handleTextClick = useCallback(() => {
-    if (quadrant !== "finished") {
-      setIsEditing(true);
-    }
-  }, [quadrant]);
+    if (todo.completed) return;
+    setIsEditing(true);
+  }, [todo.completed]);
 
   const handleTextChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setEditedText(e.target.value);
@@ -174,7 +209,8 @@ export default function TodoItem({
 
   // Function to calculate animation path
   const calculateAnimationPath = (
-    isFinishing: boolean
+    isFinishing: boolean,
+    isFromModal: boolean = false
   ): React.CSSProperties => {
     if (!itemRef.current || !finishedButtonRef.current) {
       return {
@@ -190,10 +226,27 @@ export default function TodoItem({
     let targetRect: DOMRect;
 
     if (isFinishing) {
-      // When finishing, animate to the FINISHED button
+      // When finishing, animate to the center of the FINISHED button
       targetRect = finishedButtonRef.current.getBoundingClientRect();
+      // Calculate center position of the button
+      const centerX = targetRect.left + targetRect.width / 2;
+      const centerY = targetRect.top + targetRect.height / 2;
+      
+      // Calculate the transform needed to move to the center
+      const translateX = centerX - (itemRect.left + itemRect.width / 2);
+      const translateY = centerY - (itemRect.top + itemRect.height / 2);
+
+      return {
+        transform: `translate(${translateX}px, ${translateY}px) scale(0)`,
+        transition: "all 0.5s ease-in-out",
+        position: "fixed",
+        zIndex: 10,
+        pointerEvents: "none" as React.CSSProperties["pointerEvents"],
+        maxWidth: "33vw",
+        opacity: 0,
+      };
     } else {
-      // When restoring, animate to the target quadrant
+      // When restoring, animate from the center of the finished card to the target quadrant
       const targetQuadrant = getQuadrantElement(todo.quadrant);
       if (!targetQuadrant) {
         return {
@@ -205,23 +258,37 @@ export default function TodoItem({
         };
       }
       targetRect = targetQuadrant.getBoundingClientRect();
+      
+      // Calculate center position of the finished card
+      const centerX = itemRect.left + itemRect.width / 2;
+      const centerY = itemRect.top + itemRect.height / 2;
+      
+      // Calculate the transform needed to move from center to top-left of target
+      const translateX = targetRect.left - centerX;
+      const translateY = targetRect.top - centerY;
+
+      // If restoring from modal, use a simpler animation
+      if (isFromModal) {
+        return {
+          transform: "scale(0)",
+          transition: "all 0.3s ease-in-out",
+          position: "relative",
+          zIndex: 0,
+          pointerEvents: "auto" as React.CSSProperties["pointerEvents"],
+          opacity: 0,
+        };
+      }
+
+      return {
+        transform: `translate(${translateX}px, ${translateY}px) scale(1)`,
+        transition: "all 0.5s ease-in-out",
+        position: "fixed",
+        zIndex: 10,
+        pointerEvents: "none" as React.CSSProperties["pointerEvents"],
+        maxWidth: "33vw",
+        opacity: 1,
+      };
     }
-
-    // Calculate the transform needed to move from current position to target
-    const translateX = targetRect.left - itemRect.left;
-    const translateY = targetRect.top - itemRect.top;
-
-    // Calculate scale factor (shrink to 0.2 when finishing, grow from 0.2 when restoring)
-    const scale = isFinishing ? 0.2 : 1;
-
-    return {
-      transform: `translate(${translateX}px, ${translateY}px) scale(${scale})`,
-      transition: "all 0.8s ease-in-out",
-      position: "fixed",
-      zIndex: 10,
-      pointerEvents: "none" as React.CSSProperties["pointerEvents"],
-      maxWidth: "33vw",
-    };
   };
 
   // Function to check if we're in mobile mode
@@ -237,271 +304,265 @@ export default function TodoItem({
     }
 
     setIsAnimating(true);
-    setAnimationStyle(calculateAnimationPath(true));
+    
+    // Start the scale-to-right and fade animation
+    setAnimationStyle({
+      transform: 'translateX(50%) scaleX(0)',
+      opacity: 0,
+      transformOrigin: 'right center',
+      transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)'
+    });
 
-    // After animation completes, toggle the todo
+    // After the animation completes, toggle the todo
     setTimeout(() => {
       toggleTodo(todo.id);
       setIsAnimating(false);
       setAnimationStyle({});
-    }, 800);
+    }, 500);
   };
 
   // Handle restore animation
   const handleRestore = () => {
     if (isMobileMode()) {
       restoreTodo(todo.id);
-      onRestore?.(todo.id);
       return;
     }
 
-    // Start the animation first
     setIsAnimating(true);
-    setAnimationStyle(calculateAnimationPath(false));
+    
+    // Start the scale-to-left and fade animation
+    setAnimationStyle({
+      transform: 'translateX(-50%) scaleX(0)',
+      opacity: 0,
+      transformOrigin: 'left center',
+      transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)'
+    });
 
-    // After a short delay, restore the todo
+    // After the animation completes, restore the todo
     setTimeout(() => {
       restoreTodo(todo.id);
-      onRestore?.(todo.id);
+      setIsAnimating(false);
+      setAnimationStyle({});
+    }, 500);
+  };
 
-      // Clean up animation state after animation completes
-      setTimeout(() => {
-        setIsAnimating(false);
-        setAnimationStyle({});
-      }, 800);
-    }, 50);
+  // Handle delete animation
+  const handleDelete = () => {
+    if (isMobileMode()) {
+      permanentlyDeleteTodo(todo.id);
+      return;
+    }
+
+    setIsAnimating(true);
+    
+    // Start the scale-down animation
+    setAnimationStyle({
+      transform: "scale(0)",
+      opacity: 0,
+      transition: "all 0.3s ease-in-out",
+    });
+
+    // After the scale-down completes, delete the todo
+    setTimeout(() => {
+      permanentlyDeleteTodo(todo.id);
+      setIsAnimating(false);
+      setAnimationStyle({});
+    }, 300);
   };
 
   return (
-    <>
-      {/* Main Todo Item Container */}
-      <div
-        ref={itemRef}
-        className={`w-full sm:w-[90%] rounded-lg shadow-soft border border-gray-200 p-2 cursor-move relative
-          transition-all duration-200 hover:shadow-md hover:scale-[1.01] hover:border-gray-300
-          ${quadrant === "finished" ? "bg-gray-50" : "bg-white"}
-          ${isAnimating ? "pointer-events-none" : ""}
-          todo-item transition-opacity duration-300 ease-in-out`}
-        style={{
-          opacity,
-          ...animationStyle,
-        }}
-        draggable={!isAnimating}
-        onDragStart={onDragStart(todo, quadrant)}
-        onDragEnd={onDragEnd}
-        role="listitem"
-        aria-label={`Task: ${todo.text}`}
-      >
-        {/* Strikethrough line for finished todos */}
-        {quadrant === "finished" && (
-          <div className="absolute top-1/2 left-[2.5rem] right-[-0.5rem] h-[2px] bg-gray-400 -translate-y-1/2 z-10" />
-        )}
-
-        {/* Todo Content */}
-        <div className="flex items-center gap-2">
-          {/* Checkbox/Undo */}
-          {quadrant === "finished" ? (
-            <button
-              onClick={handleRestore}
-              className="p-1.5 rounded-full hover:bg-gray-100 transition-colors flex-shrink-0"
-              aria-label="Restore task"
-            >
-              <CircleCheckBig className="w-4 h-4 text-green-700 drop-shadow-[0_0_20px_rgba(21,128,61,0.8)]" />
-            </button>
+    <div
+      ref={itemRef}
+      className={`group flex items-center gap-3 py-2.5 px-3 rounded-lg shadow-sm transition-all duration-200 w-full max-w-3xl ${
+        quadrant === "finished"
+          ? "bg-red-50/30 hover:bg-red-100/40 border border-red-200/50"
+          : "bg-white hover:bg-gray-50 border border-gray-100"
+      } ${
+        (todo.dueDate || todo.note || todo.isWaiting) && !todo.completed && quadrant !== "finished"
+          ? ""
+          : ""
+      } ${
+        todo.isWaiting ? "opacity-70" : ""
+      } ${isAnimating ? "pointer-events-none" : ""}`}
+      style={{ opacity, ...animationStyle }}
+      draggable={!todo.completed}
+      onDragStart={onDragStart(todo)}
+      onDragEnd={onDragEnd}
+      onDrop={onDrop}
+      onDragOver={onDragOver}
+      onDragLeave={onDragLeave}
+    >
+      {/* Checkbox/Undo */}
+      {todo.completed ? (
+        <button
+          onClick={handleRestore}
+          className="p-2 rounded-full border-2 border-transparent transition-all duration-300 flex-shrink-0 transform hover:scale-[1.25]"
+          aria-label="Restore task"
+        >
+          <CircleCheckBig className="w-4 h-4 text-green-700" />
+        </button>
+      ) : (
+        <button
+          onClick={handleFinish}
+          className={`${iconStyles.base} ${iconStyles.active.check}`}
+          aria-label={todo.completed ? "Mark as incomplete" : "Mark as complete"}
+        >
+          {todo.completed ? (
+            <CircleCheck className="w-4 h-4" />
           ) : (
-            <button
-              onClick={handleFinish}
-              className="p-1.5 rounded-full hover:bg-gray-100 transition-colors flex-shrink-0"
-              aria-label={
-                todo.completed ? "Mark as incomplete" : "Mark as complete"
-              }
-            >
-              {todo.completed ? (
-                <CircleCheck className="w-4 h-4 text-green-700 drop-shadow-[0_0_20px_rgba(21,128,61,0.8)]" />
-              ) : (
-                <Circle className="w-4 h-4 text-green-700 drop-shadow-[0_0_20px_rgba(21,128,61,0.8)]" />
-              )}
-            </button>
+            <Circle className="w-4 h-4" />
           )}
+        </button>
+      )}
 
-          {/* Task Name Input */}
-          <div className="flex-1 min-w-0">
-            {isEditing ? (
-              <input
-                type="text"
-                value={editedText}
-                onChange={handleTextChange}
-                onBlur={handleTextBlur}
-                onKeyDown={handleKeyDown}
-                className="w-full px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-                autoFocus
-              />
-            ) : (
-              <div
-                onClick={handleTextClick}
-                className={`block w-full px-2 py-1 cursor-text truncate
-                  ${todo.completed && quadrant !== "finished"
-                    ? "line-through text-gray-500"
-                    : "text-gray-800"
-                  } ${
-                    quadrant !== "finished"
-                      ? "hover:bg-primary-50/50 hover:backdrop-blur-sm hover:shadow-[0_0_8px_rgba(59,130,246,0.3)]"
-                      : ""
-                  } transition-all duration-200 rounded-md`}
-              >
-                {todo.text}
-              </div>
-            )}
+      {/* Task Name Input */}
+      <div className="flex-1 min-w-0">
+        {isEditing ? (
+          <input
+            type="text"
+            value={editedText}
+            onChange={handleTextChange}
+            onBlur={handleTextBlur}
+            onKeyDown={handleKeyDown}
+            className="w-full px-2.5 py-1.5 text-gray-900 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
+            autoFocus
+          />
+        ) : (
+          <div
+            onClick={handleTextClick}
+            className={`block w-full px-2.5 py-1.5 cursor-default truncate
+              ${todo.completed ? "text-gray-400" : "text-gray-900"} 
+              transition-all duration-200 rounded-md ${!todo.completed ? "border-2 border-transparent hover:border-gray-300" : ""}`}
+          >
+            {todo.text}
           </div>
+        )}
+      </div>
 
-          {/* Icons */}
-          <div className="flex items-center gap-1.5 flex-shrink-0">
-            {/* Calendar Icon */}
-            {quadrant === "finished" ? (
-              <div
-                className={`p-1 rounded-full ${
-                  todo.dueDate
-                    ? "text-blue-300 drop-shadow-[0_0_8px_rgba(147,197,253,0.5)]"
-                    : "text-gray-400"
-                }`}
-              >
-                <CalendarIcon className="h-5 w-5" />
-              </div>
-            ) : (
-              <>
-                {todo.dueDate ? (
-                  <Tooltip
-                    content={format(
-                      new Date(todo.dueDate),
-                      "EEEE MMMM d, yyyy"
-                    )}
-                    bgColor={
-                      isToday(new Date(todo.dueDate))
-                        ? "bg-green-300"
-                        : isBefore(new Date(todo.dueDate), new Date())
-                        ? "bg-red-300"
-                        : "bg-blue-300"
-                    }
-                    textColor="text-white"
-                  >
-                    <button onClick={handleDueDateClick} className="p-1 rounded-full hover:bg-blue-50 transition-colors">
-                      <CalendarIcon
-                        className={`h-5 w-5 ${
-                          isToday(new Date(todo.dueDate))
-                            ? "text-green-300 drop-shadow-[0_0_20px_rgba(134,239,172,0.8)]"
-                            : isBefore(new Date(todo.dueDate), new Date())
-                            ? "text-red-300 drop-shadow-[0_0_20px_rgba(252,165,165,0.8)]"
-                            : "text-blue-300 drop-shadow-[0_0_20px_rgba(147,197,253,0.8)]"
-                        }`}
-                      />
+      {/* Action Icons */}
+      <div className="flex items-center gap-1.5 flex-shrink-0">
+        {quadrant === "finished" ? (
+          <>
+            <div className={`${iconStyles.base} ${todo.dueDate ? "text-blue-400" : "text-gray-400"}`}>
+              <CalendarIcon size={16} />
+            </div>
+            <div className={`${iconStyles.base} ${todo.note ? "text-purple-400" : "text-gray-400"}`}>
+              <MessageSquareIcon size={16} />
+            </div>
+            <div className={`${iconStyles.base} ${todo.isWaiting ? "text-orange-400" : "text-gray-400"}`}>
+              <HourglassIcon size={16} />
+            </div>
+            <button
+              onClick={handleDelete}
+              className={`${iconStyles.base} ${iconStyles.active.delete} hover:scale-120`}
+            >
+              <TrashIcon className="w-4 h-4" />
+            </button>
+          </>
+        ) : (
+          <>
+            {todo.dueDate && !todo.completed ? (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={handleDueDateClick}
+                      className={`${iconStyles.base} ${
+                        todo.dueDate ? iconStyles.active.calendar : iconStyles.inactive
+                      } ${todo.dueDate ? iconStyles.glow.calendar : ""}`}
+                      disabled={todo.completed}
+                    >
+                      <CalendarIcon size={16} />
                     </button>
-                  </Tooltip>
-                ) : (
-                  <button
-                    onClick={handleDueDateClick}
-                    className="p-1 rounded-full hover:bg-gray-100 transition-colors"
-                    aria-label="Set due date"
-                  >
-                    <CalendarIcon className="h-5 w-5 text-gray-400" />
-                  </button>
-                )}
-              </>
+                  </TooltipTrigger>
+                  <TooltipContent className={`min-w-[120px] text-center ${iconStyles.tooltip.calendar}`}>
+                    {format(todo.dueDate, "MMM d, yyyy")}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            ) : (
+              <button
+                onClick={handleDueDateClick}
+                className={`${iconStyles.base} ${
+                  todo.dueDate ? iconStyles.active.calendar : iconStyles.inactiveWithScale
+                } ${todo.dueDate ? iconStyles.glow.calendar : ""}`}
+                disabled={todo.completed}
+              >
+                <CalendarIcon size={16} />
+              </button>
             )}
 
-            {/* Note Icon */}
-            {quadrant === "finished" ? (
-              <div
-                className={`p-1 rounded-full ${
-                  todo.note
-                    ? "text-purple-300 drop-shadow-[0_0_8px_rgba(216,180,254,0.5)]"
-                    : "text-gray-400"
-                }`}
-              >
-                <MessageSquareIcon className="h-5 w-5" />
-              </div>
-            ) : (
-              <>
-                {todo.note ? (
-                  <Tooltip
-                    content={todo.note}
-                    bgColor="bg-purple-300"
-                    textColor="text-white"
-                  >
-                    <button onClick={handleNoteClick} className="p-1 rounded-full hover:bg-purple-50 transition-colors">
-                      <MessageSquareIcon className="h-5 w-5 text-purple-300 drop-shadow-[0_0_20px_rgba(216,180,254,0.8)]" />
+            {todo.note && !todo.completed ? (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={handleNoteClick}
+                      className={`${iconStyles.base} ${
+                        todo.note ? iconStyles.active.note : iconStyles.inactive
+                      } ${todo.note ? iconStyles.glow.note : ""}`}
+                      disabled={todo.completed}
+                    >
+                      <MessageSquareIcon size={16} />
                     </button>
-                  </Tooltip>
-                ) : (
-                  <button
-                    onClick={handleNoteClick}
-                    className="p-1 rounded-full hover:bg-gray-100 transition-colors"
-                    aria-label="Add note"
-                  >
-                    <MessageSquareIcon className="h-5 w-5 text-gray-400" />
-                  </button>
-                )}
-              </>
+                  </TooltipTrigger>
+                  <TooltipContent className={`min-w-[200px] max-w-[300px] whitespace-pre-wrap text-left ${iconStyles.tooltip.note}`}>
+                    {todo.note}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            ) : (
+              <button
+                onClick={handleNoteClick}
+                className={`${iconStyles.base} ${
+                  todo.note ? iconStyles.active.note : iconStyles.inactiveWithScale
+                } ${todo.note ? iconStyles.glow.note : ""}`}
+                disabled={todo.completed}
+              >
+                <MessageSquareIcon size={16} />
+              </button>
             )}
 
-            {/* Hourglass Icon */}
-            {quadrant === "finished" ? (
-              <div
-                className={`p-1 rounded-full ${
-                  todo.isWaiting
-                    ? "text-orange-300 drop-shadow-[0_0_8px_rgba(253,186,116,0.5)]"
-                    : "text-gray-400"
-                }`}
-              >
-                <HourglassIcon className="h-5 w-5" />
-              </div>
-            ) : (
-              <>
-                {todo.isWaiting ? (
-                  <Tooltip
-                    content="WAITING"
-                    bgColor="bg-orange-300"
-                    textColor="text-white"
-                  >
+            {todo.isWaiting && !todo.completed ? (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
                     <button
                       onClick={() => toggleWaiting(todo.id)}
-                      className="p-1 rounded-full hover:bg-orange-50 transition-colors"
+                      className={`${iconStyles.base} ${
+                        todo.isWaiting ? iconStyles.active.waiting : iconStyles.inactive
+                      } ${todo.isWaiting ? iconStyles.glow.waiting : ""}`}
+                      disabled={todo.completed}
                     >
-                      <HourglassIcon className="h-5 w-5 text-orange-300 drop-shadow-[0_0_20px_rgba(253,186,116,0.8)]" />
+                      <HourglassIcon size={16} />
                     </button>
-                  </Tooltip>
-                ) : (
-                  <button
-                    onClick={() => toggleWaiting(todo.id)}
-                    className="p-1 rounded-full hover:bg-gray-100 transition-colors"
-                    aria-label="Mark as waiting"
-                  >
-                    <HourglassIcon className="h-5 w-5 text-gray-400" />
-                  </button>
-                )}
-              </>
-            )}
-
-            {/* Delete Button */}
-            {quadrant === "finished" ? (
-              <button
-                onClick={() => permanentlyDeleteTodo(todo.id)}
-                className="p-1 rounded-full hover:bg-red-50 transition-colors"
-                aria-label="Permanently delete task"
-              >
-                <TrashIcon className="h-5 w-5 text-red-300 drop-shadow-[0_0_20px_rgba(252,165,165,0.8)]" />
-              </button>
+                  </TooltipTrigger>
+                  <TooltipContent className={`min-w-[100px] text-center ${iconStyles.tooltip.waiting}`}>
+                    Waiting...
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             ) : (
               <button
-                onClick={() => permanentlyDeleteTodo(todo.id)}
-                className="p-1 rounded-full hover:bg-red-50 transition-colors"
-                aria-label="Delete task"
+                onClick={() => toggleWaiting(todo.id)}
+                className={`${iconStyles.base} ${
+                  todo.isWaiting ? iconStyles.active.waiting : iconStyles.inactiveWithScale
+                } ${todo.isWaiting ? iconStyles.glow.waiting : ""}`}
+                disabled={todo.completed}
               >
-                <TrashIcon className="h-5 w-5 text-red-300 drop-shadow-[0_0_20px_rgba(252,165,165,0.8)]" />
+                <HourglassIcon size={16} />
               </button>
             )}
-          </div>
-        </div>
+
+            <button
+              onClick={handleDelete}
+              className={`${iconStyles.base} ${iconStyles.active.delete} hover:scale-120`}
+            >
+              <TrashIcon className="w-4 h-4" />
+            </button>
+          </>
+        )}
       </div>
-    </>
+    </div>
   );
 }
