@@ -37,12 +37,8 @@ export interface Todo {
   quadrant: QuadrantKey;
   dueDate?: Date;
   note?: string;
-  originalQuadrant?: QuadrantKey;
-  previousQuadrant?: QuadrantKey;
   deleted?: boolean;
 }
-
-export type ActiveQuadrantKey = Exclude<QuadrantKey, "finished">;
 
 export interface DragData {
   todo: Todo;

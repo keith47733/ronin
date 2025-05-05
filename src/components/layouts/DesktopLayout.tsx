@@ -68,34 +68,36 @@ export function DesktopLayout() {
   }, [quadrants, moveTodo]);
 
   return (
-    <div className="flex flex-row h-[calc(100vh-4rem)] overflow-hidden">
+    <div className="flex flex-row h-[calc(100vh-4rem)] overflow-hidden p-2 gap-2">
       {/* Left Panel - Inbox */}
-      <div className="w-1/3 h-full p-3">
-        <TodoList />
+      <div className="w-1/3 h-full">
+        <div className="h-full border border-gray-400 rounded-lg p-2">
+          <TodoList />
+        </div>
       </div>
 
       {/* Right Panel - Quadrants */}
-      <div className="w-2/3 h-full p-3">
+      <div className="w-2/3 h-full">
         <div className="h-full relative">
           {/* Grid Container */}
-          <div className="grid grid-cols-2 grid-rows-2 gap-3 h-full">
+          <div className="grid grid-cols-2 grid-rows-2 gap-3 h-full p-3">
             {renderQuadrants}
           </div>
 
           {/* Vertical Divider */}
-          <div className="absolute left-1/2 top-0 bottom-0 w-[2px] bg-black/25 -translate-x-1/2 pointer-events-none"></div>
+          <div className="absolute left-1/2 top-2 bottom-2 w-[1px] bg-gray-400 -translate-x-1/2 pointer-events-none"></div>
 
           {/* Horizontal Divider */}
-          <div className="absolute top-1/2 left-0 right-0 h-[2px] bg-black/25 -translate-y-1/2 z-10 pointer-events-none"></div>
+          <div className="absolute top-1/2 left-2 right-2 h-[1px] bg-gray-400 -translate-y-1/2 z-10 pointer-events-none"></div>
 
           {/* Centered Logo */}
           <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
             <Image
-              src="/ronin.png"
-              alt="Ronin Logo"
-              width={90}
-              height={90}
-              className="opacity-90 blur-[15%] filter brightness-0 rounded-md transition-transform duration-300 hover:scale-[1.35]"
+              src="/katana.png"
+              alt="Katana Icon"
+              width={72}
+              height={72}
+              className="opacity-100 blur-[15%] filter brightness-0 rounded-md transition-transform duration-300 hover:scale-[1.25] rotate-[30deg]"
               priority
             />
           </div>

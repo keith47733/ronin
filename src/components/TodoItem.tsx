@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useRef, useState, useEffect, useCallback, useMemo } from "react";
-import { Todo, QuadrantKey, ActiveQuadrantKey } from "@/types/todo";
+import React, { useRef, useState, useCallback, useMemo, useEffect } from "react";
+import { Todo, QuadrantKey } from "@/types/todo";
 import { useTodo } from "@/context/TodoContext";
 import { useModal } from "@/context/ModalContext";
 import { useAnimation } from "@/context/AnimationContext";
@@ -13,9 +13,10 @@ import {
   Circle,
   CircleCheck,
   CircleCheckBig,
+  Grip,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/Tooltip";
-import { format, isToday, isBefore } from "date-fns";
+import { format } from "date-fns";
 
 /**
  * Props interface for the TodoItem component
@@ -29,29 +30,25 @@ interface TodoItemProps {
   onDragOver: (e: React.DragEvent<HTMLDivElement>) => void;
   onDragLeave: (e: React.DragEvent<HTMLDivElement>) => void;
   onDelete: (id: string) => void;
-  onToggle: (id: string) => void;
-  onToggleWaiting: (id: string) => void;
   onUpdateText: (id: string, text: string) => void;
-  onUpdateDueDate: (id: string, date: Date | undefined) => void;
-  onUpdateNote: (id: string, note: string) => void;
 }
 
 // Add these styles near the top of the file, after the imports
 const iconStyles = {
-  base: "p-2 rounded-full transition-all duration-300 border-2 border-transparent flex items-center justify-center",
+  base: "p-1.5 rounded-full transition-all duration-300 border border-transparent flex items-center justify-center",
   active: {
-    calendar: "text-blue-500 bg-blue-100/80 hover:bg-blue-200/80 hover:border-blue-300",
-    note: "text-purple-500 bg-purple-100/80 hover:bg-purple-200/80 hover:border-purple-300",
-    waiting: "text-orange-500 bg-orange-100/80 hover:bg-orange-200/80 hover:border-orange-300",
+    calendar: "text-blue-500 bg-blue-100/80 hover:bg-blue-200/80 hover:border-blue-300 transform hover:scale-[1.25]",
+    note: "text-purple-500 bg-purple-100/80 hover:bg-purple-200/80 hover:border-purple-300 transform hover:scale-[1.25]",
+    waiting: "text-orange-500 bg-orange-100/80 hover:bg-orange-200/80 hover:border-orange-300 transform hover:scale-[1.25]",
     check: "text-green-600 transform hover:scale-[1.25]",
     delete: "text-red-500 transform hover:scale-[1.25]",
   },
-  inactive: "text-gray-400 hover:bg-gray-100/80",
+  inactive: "text-gray-400 hover:bg-gray-100/80 transform hover:scale-[1.25]",
   inactiveWithScale: "text-gray-400 hover:bg-gray-100/80 transform hover:scale-[1.25]",
   glow: {
-    calendar: "drop-shadow-[0_0_8px_rgba(59,130,246,0.2)]",
-    note: "drop-shadow-[0_0_8px_rgba(168,85,247,0.2)]",
-    waiting: "drop-shadow-[0_0_8px_rgba(249,115,22,0.2)]",
+    calendar: "drop-shadow-[0_0_4px_rgba(59,130,246,0.2)]",
+    note: "drop-shadow-[0_0_4px_rgba(168,85,247,0.2)]",
+    waiting: "drop-shadow-[0_0_4px_rgba(249,115,22,0.2)]",
   },
   tooltip: {
     calendar: "bg-blue-50 text-blue-800 [&>div:last-child]:border-t-blue-50 [&>div:last-child]:bg-blue-50",
@@ -92,11 +89,7 @@ export default function TodoItem({
   onDragOver,
   onDragLeave,
   onDelete,
-  onToggle,
-  onToggleWaiting,
   onUpdateText,
-  onUpdateDueDate,
-  onUpdateNote,
 }: TodoItemProps) {
   // Context hooks for state management
   const {
@@ -115,6 +108,7 @@ export default function TodoItem({
   const [editedText, setEditedText] = useState(todo.text); // Buffer for edited text
   const [opacity, setOpacity] = useState(0); // Controls fade-in animation
   const [isAnimating, setIsAnimating] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const [animationStyle, setAnimationStyle] = useState<React.CSSProperties>({});
   const itemRef = useRef<HTMLDivElement>(null);
   const { finishedButtonRef } = useAnimation();
@@ -370,33 +364,53 @@ export default function TodoItem({
     }, 300);
   };
 
+  // Custom drag handlers
+  const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
+    setIsDragging(true);
+    onDragStart(todo)(e);
+  };
+
+  const handleDragEnd = (e: React.DragEvent<HTMLDivElement>) => {
+    setIsDragging(false);
+    onDragEnd(e);
+  };
+
   return (
     <div
       ref={itemRef}
-      className={`group flex items-center gap-3 py-2.5 px-3 rounded-lg shadow-sm transition-all duration-200 w-full max-w-3xl ${
+      className={`group flex items-center gap-2 py-2.5 px-3 rounded-lg shadow-sm transition-all duration-200 w-full max-w-3xl ${
         quadrant === "finished"
-          ? "bg-red-50/30 hover:bg-red-100/40 border border-red-200/50"
-          : "bg-white hover:bg-gray-50 border border-gray-100"
+          ? "bg-red-100/30 hover:bg-red-200/40 border border-red-200/50"
+          : "bg-white hover:bg-gray-100 border border-gray-100"
       } ${
         (todo.dueDate || todo.note || todo.isWaiting) && !todo.completed && quadrant !== "finished"
           ? ""
           : ""
       } ${
         todo.isWaiting ? "opacity-70" : ""
-      } ${isAnimating ? "pointer-events-none" : ""}`}
+      } ${isAnimating ? "pointer-events-none" : ""} ${isDragging ? "cursor-grabbing" : ""}`}
       style={{ opacity, ...animationStyle }}
-      draggable={!todo.completed}
-      onDragStart={onDragStart(todo)}
-      onDragEnd={onDragEnd}
       onDrop={onDrop}
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
     >
+      {/* Grab Handle */}
+      {!todo.completed && (
+        <div 
+          className="flex-shrink-0 text-gray-400 cursor-grab active:cursor-grabbing"
+          draggable={!todo.completed}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+        >
+          <Grip className="w-5 h-5" />
+        </div>
+      )}
+
       {/* Checkbox/Undo */}
       {todo.completed ? (
         <button
           onClick={handleRestore}
-          className="p-2 rounded-full border-2 border-transparent transition-all duration-300 flex-shrink-0 transform hover:scale-[1.25]"
+          className="p-1.5 rounded-full border border-transparent transition-all duration-300 flex-shrink-0 transform hover:scale-[1.25]"
           aria-label="Restore task"
         >
           <CircleCheckBig className="w-4 h-4 text-green-700" />
@@ -416,7 +430,7 @@ export default function TodoItem({
       )}
 
       {/* Task Name Input */}
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 pointer-events-none">
         {isEditing ? (
           <input
             type="text"
@@ -424,7 +438,7 @@ export default function TodoItem({
             onChange={handleTextChange}
             onBlur={handleTextBlur}
             onKeyDown={handleKeyDown}
-            className="w-full px-2.5 py-1.5 text-gray-900 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
+            className="w-full px-2.5 py-1.5 text-gray-900 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200 pointer-events-auto"
             autoFocus
           />
         ) : (
@@ -432,7 +446,7 @@ export default function TodoItem({
             onClick={handleTextClick}
             className={`block w-full px-2.5 py-1.5 cursor-default truncate
               ${todo.completed ? "text-gray-400" : "text-gray-900"} 
-              transition-all duration-200 rounded-md ${!todo.completed ? "border-2 border-transparent hover:border-gray-300" : ""}`}
+              transition-all duration-200 rounded-md ${!todo.completed ? "border border-transparent hover:border-gray-300" : ""} pointer-events-auto`}
           >
             {todo.text}
           </div>
@@ -440,7 +454,7 @@ export default function TodoItem({
       </div>
 
       {/* Action Icons */}
-      <div className="flex items-center gap-1.5 flex-shrink-0">
+      <div className={`flex items-center gap-1 flex-shrink-0 ${isDragging ? "pointer-events-none" : ""}`}>
         {quadrant === "finished" ? (
           <>
             <div className={`${iconStyles.base} ${todo.dueDate ? "text-blue-400" : "text-gray-400"}`}>

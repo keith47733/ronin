@@ -69,30 +69,31 @@ export function TodoList() {
     // - Flex column layout
     // - Full height on desktop
     // - Natural height on mobile
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col p-1">
       {/* Add Task Form Section
           - Fixed position at top
           - Full width input
           - Responsive button
           - Clear visual hierarchy */}
-      <div className="shrink-0 mb-3">
+      <div className="shrink-0 pt-[2px] pb-[2px]">
         <form onSubmit={handleSubmit} className="w-full">
-          <div className="flex space-x-2">
+          <div className="flex space-x-2 items-center pb-2">
             <input
               type="text"
               value={newTodo}
               onChange={(e) => setNewTodo(e.target.value)}
               placeholder="Add a new task..."
-              className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="flex-1 px-4 py-2 pb-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               autoFocus
             />
             <button
               type="submit"
-              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-4 py-2 pb-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               Add
             </button>
           </div>
+          <div className="border-b border-gray-200 bg-white/50 mt-2" />
         </form>
       </div>
 
@@ -101,7 +102,7 @@ export function TodoList() {
           - Expanding on mobile
           - Consistent styling with other quadrants
           - Drag and drop support */}
-      <div className="flex-1 min-h-0">
+      <div className="flex-1 min-h-0 mt-2">
         <Quadrant
           todos={quadrants.inbox}
           onDrop={(data) => moveTodo(data.todo, data.fromQuadrant, "inbox")}

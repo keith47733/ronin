@@ -177,7 +177,7 @@ export function Quadrant({
       data-quadrant={quadrant}
     >
       {/* Header */}
-      <div className="px-4 py-2 border-b border-gray-200 text-center flex-shrink-0 bg-white/50 backdrop-blur-sm relative z-[1]">
+      <div className="px-4 py-2 border-b border-gray-200 text-center flex-shrink-0 bg-white/50 backdrop-blur-sm relative z-[1] rounded-t-lg">
         <h2 className="title text-lg tracking-wide">{title}</h2>
         <p className="subtitle text-sm text-gray-600">{subtitle}</p>
       </div>
