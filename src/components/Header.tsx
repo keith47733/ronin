@@ -62,7 +62,7 @@ export default function Header() {
             height={44}
             className="h-11 w-auto object-contain rounded-md"
           />
-          <h1 className="text-5xl font-bold font-ronin tracking-widest">
+          <h1 className="pl-2 text-5xl font-bold font-ronin tracking-widest">
             RONIN
           </h1>
         </div>

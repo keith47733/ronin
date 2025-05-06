@@ -4,6 +4,8 @@ import React from "react";
 import { TodoList } from "@/components/TodoList";
 import { Quadrant } from "@/components/Quadrant";
 import { useTodo } from "@/context/TodoContext";
+import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { QuadrantKey } from "@/types/todo";
 
 /**
  * MobileLayout Component
@@ -14,8 +16,35 @@ import { useTodo } from "@/context/TodoContext";
  * - Full-width sections
  * - Touch-friendly interface
  */
+const QUADRANT_CONFIG = [
+  {
+    title: "DO NOW",
+    subtitle: "Urgent & Important",
+    quadrant: "urgentImportant",
+    bgColor: "bg-green-50",
+  },
+  {
+    title: "SCHEDULE",
+    subtitle: "Not Urgent & Important",
+    quadrant: "notUrgentImportant",
+    bgColor: "bg-blue-50",
+  },
+  {
+    title: "DELEGATE",
+    subtitle: "Urgent & Not Important",
+    quadrant: "urgentNotImportant",
+    bgColor: "bg-orange-50",
+  },
+  {
+    title: "DELETE",
+    subtitle: "Not Urgent & Not Important",
+    quadrant: "notUrgentNotImportant",
+    bgColor: "bg-red-50",
+  },
+];
+
 export function MobileLayout() {
-  const { quadrants, moveTodo } = useTodo();
+  const { quadrants } = useTodo();
 
   return (
     <div className="flex flex-col h-full overflow-y-auto">
@@ -27,49 +56,22 @@ export function MobileLayout() {
       {/* Quadrants Section */}
       <div className="w-full p-3">
         <div className="space-y-3">
-          <Quadrant
-            title="DO NOW"
-            subtitle="Urgent & Important"
-            todos={quadrants.urgentImportant}
-            onDrop={(data) =>
-              moveTodo(data.todo, data.fromQuadrant, "urgentImportant")
-            }
-            quadrant="urgentImportant"
-            bgColor="bg-green-50"
-          />
-
-          <Quadrant
-            title="SCHEDULE"
-            subtitle="Not Urgent & Important"
-            todos={quadrants.notUrgentImportant}
-            onDrop={(data) =>
-              moveTodo(data.todo, data.fromQuadrant, "notUrgentImportant")
-            }
-            quadrant="notUrgentImportant"
-            bgColor="bg-blue-50"
-          />
-
-          <Quadrant
-            title="DELEGATE"
-            subtitle="Urgent & Not Important"
-            todos={quadrants.urgentNotImportant}
-            onDrop={(data) =>
-              moveTodo(data.todo, data.fromQuadrant, "urgentNotImportant")
-            }
-            quadrant="urgentNotImportant"
-            bgColor="bg-orange-50"
-          />
-
-          <Quadrant
-            title="DELETE"
-            subtitle="Not Urgent & Not Important"
-            todos={quadrants.notUrgentNotImportant}
-            onDrop={(data) =>
-              moveTodo(data.todo, data.fromQuadrant, "notUrgentNotImportant")
-            }
-            quadrant="notUrgentNotImportant"
-            bgColor="bg-red-50"
-          />
+          {(QUADRANT_CONFIG as { title: string; subtitle: string; quadrant: QuadrantKey; bgColor: string }[]).map((config) => (
+            <SortableContext
+              key={config.quadrant}
+              items={quadrants[config.quadrant as QuadrantKey].map((t: any) => t.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              <Quadrant
+                title={config.title}
+                subtitle={config.subtitle}
+                todos={quadrants[config.quadrant as QuadrantKey]}
+                onDrop={() => {}}
+                quadrant={config.quadrant as QuadrantKey}
+                bgColor={config.bgColor}
+              />
+            </SortableContext>
+          ))}
         </div>
       </div>
     </div>

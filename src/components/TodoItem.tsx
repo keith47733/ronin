@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/Tooltip";
 import { format } from "date-fns";
+import styles from "./TodoItem.module.css";
 
 /**
  * Props interface for the TodoItem component
@@ -31,6 +32,7 @@ interface TodoItemProps {
   onDragLeave: (e: React.DragEvent<HTMLDivElement>) => void;
   onDelete: (id: string) => void;
   onUpdateText: (id: string, text: string) => void;
+  grabHandleProps?: any;
 }
 
 // Add these styles near the top of the file, after the imports
@@ -46,9 +48,9 @@ const iconStyles = {
   inactive: "text-gray-400 hover:bg-gray-100/80 transform hover:scale-[1.25]",
   inactiveWithScale: "text-gray-400 hover:bg-gray-100/80 transform hover:scale-[1.25]",
   glow: {
-    calendar: "drop-shadow-[0_0_4px_rgba(59,130,246,0.2)]",
-    note: "drop-shadow-[0_0_4px_rgba(168,85,247,0.2)]",
-    waiting: "drop-shadow-[0_0_4px_rgba(249,115,22,0.2)]",
+    calendar: "drop-shadow-[0_0_2px_rgba(59,130,246,0.2)]",
+    note: "drop-shadow-[0_0_2px_rgba(168,85,247,0.2)]",
+    waiting: "drop-shadow-[0_0_2px_rgba(249,115,22,0.2)]",
   },
   tooltip: {
     calendar: "bg-blue-50 text-blue-800 [&>div:last-child]:border-t-blue-50 [&>div:last-child]:bg-blue-50",
@@ -90,6 +92,7 @@ export default function TodoItem({
   onDragLeave,
   onDelete,
   onUpdateText,
+  grabHandleProps,
 }: TodoItemProps) {
   // Context hooks for state management
   const {
@@ -367,7 +370,21 @@ export default function TodoItem({
   // Custom drag handlers
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
     setIsDragging(true);
+    // Set the drag data before calling the parent handler
+    e.dataTransfer.setData("application/json", JSON.stringify({ todo, fromQuadrant: quadrant }));
+    e.dataTransfer.effectAllowed = "move";
     onDragStart(todo)(e);
+    
+    // Add a semi-transparent clone of the dragged item
+    if (e.dataTransfer.setDragImage) {
+      const dragImage = e.currentTarget.cloneNode(true) as HTMLElement;
+      dragImage.style.opacity = "0.5";
+      dragImage.style.position = "absolute";
+      dragImage.style.top = "-1000px";
+      document.body.appendChild(dragImage);
+      e.dataTransfer.setDragImage(dragImage, 0, 0);
+      setTimeout(() => document.body.removeChild(dragImage), 0);
+    }
   };
 
   const handleDragEnd = (e: React.DragEvent<HTMLDivElement>) => {
@@ -378,31 +395,20 @@ export default function TodoItem({
   return (
     <div
       ref={itemRef}
-      className={`group flex items-center gap-2 py-2.5 px-3 rounded-lg shadow-sm transition-all duration-200 w-full max-w-3xl ${
-        quadrant === "finished"
-          ? "bg-red-100/30 hover:bg-red-200/40 border border-red-200/50"
-          : "bg-white hover:bg-gray-100 border border-gray-100"
-      } ${
-        (todo.dueDate || todo.note || todo.isWaiting) && !todo.completed && quadrant !== "finished"
-          ? ""
-          : ""
-      } ${
-        todo.isWaiting ? "opacity-70" : ""
-      } ${isAnimating ? "pointer-events-none" : ""} ${isDragging ? "cursor-grabbing" : ""}`}
-      style={{ opacity, ...animationStyle }}
-      onDrop={onDrop}
-      onDragOver={onDragOver}
-      onDragLeave={onDragLeave}
+      className={`group relative flex items-center gap-2 p-2 rounded-lg transition-all duration-200 w-[95%] mx-auto
+        ${isDragging ? "opacity-50 scale-95" : quadrant === "finished" ? "bg-red-50 hover:bg-red-100" : "bg-white hover:bg-gray-100"}
+        ${todo.completed ? "opacity-50" : ""}`}
+      style={{ opacity }}
+      draggable={false}
     >
       {/* Grab Handle */}
       {!todo.completed && (
         <div 
           className="flex-shrink-0 text-gray-400 cursor-grab active:cursor-grabbing"
-          draggable={!todo.completed}
-          onDragStart={handleDragStart}
-          onDragEnd={handleDragEnd}
+          draggable={false}
+          {...grabHandleProps}
         >
-          <Grip className="w-5 h-5" />
+          <Grip className="w-4 h-4" />
         </div>
       )}
 
@@ -412,6 +418,7 @@ export default function TodoItem({
           onClick={handleRestore}
           className="p-1.5 rounded-full border border-transparent transition-all duration-300 flex-shrink-0 transform hover:scale-[1.25]"
           aria-label="Restore task"
+          draggable={false}
         >
           <CircleCheckBig className="w-4 h-4 text-green-700" />
         </button>
@@ -420,6 +427,7 @@ export default function TodoItem({
           onClick={handleFinish}
           className={`${iconStyles.base} ${iconStyles.active.check}`}
           aria-label={todo.completed ? "Mark as incomplete" : "Mark as complete"}
+          draggable={false}
         >
           {todo.completed ? (
             <CircleCheck className="w-4 h-4" />
@@ -430,7 +438,7 @@ export default function TodoItem({
       )}
 
       {/* Task Name Input */}
-      <div className="flex-1 min-w-0 pointer-events-none">
+      <div className="flex-1 min-w-0 pointer-events-none" draggable={false}>
         {isEditing ? (
           <input
             type="text"
@@ -438,15 +446,17 @@ export default function TodoItem({
             onChange={handleTextChange}
             onBlur={handleTextBlur}
             onKeyDown={handleKeyDown}
-            className="w-full px-2.5 py-1.5 text-gray-900 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200 pointer-events-auto"
+            className="w-full px-1.5 py-0 text-gray-900 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200 pointer-events-auto"
             autoFocus
+            draggable={false}
           />
         ) : (
           <div
             onClick={handleTextClick}
-            className={`block w-full px-2.5 py-1.5 cursor-default truncate
+            className={`block w-full px-1.5 py-0 cursor-default truncate
               ${todo.completed ? "text-gray-400" : "text-gray-900"} 
               transition-all duration-200 rounded-md ${!todo.completed ? "border border-transparent hover:border-gray-300" : ""} pointer-events-auto`}
+            draggable={false}
           >
             {todo.text}
           </div>
@@ -454,23 +464,24 @@ export default function TodoItem({
       </div>
 
       {/* Action Icons */}
-      <div className={`flex items-center gap-1 flex-shrink-0 ${isDragging ? "pointer-events-none" : ""}`}>
+      <div className={`flex items-center gap-0.5 flex-shrink-0 ${isDragging ? "pointer-events-none" : ""}`} draggable={false}>
         {quadrant === "finished" ? (
           <>
-            <div className={`${iconStyles.base} ${todo.dueDate ? "text-blue-400" : "text-gray-400"}`}>
-              <CalendarIcon size={16} />
+            <div className={`${iconStyles.base} ${todo.dueDate ? "text-blue-400" : "text-gray-400"}`} draggable={false}>
+              <CalendarIcon size={14} />
             </div>
-            <div className={`${iconStyles.base} ${todo.note ? "text-purple-400" : "text-gray-400"}`}>
-              <MessageSquareIcon size={16} />
+            <div className={`${iconStyles.base} ${todo.note ? "text-purple-400" : "text-gray-400"}`} draggable={false}>
+              <MessageSquareIcon size={14} />
             </div>
-            <div className={`${iconStyles.base} ${todo.isWaiting ? "text-orange-400" : "text-gray-400"}`}>
-              <HourglassIcon size={16} />
+            <div className={`${iconStyles.base} ${todo.isWaiting ? "text-orange-400" : "text-gray-400"}`} draggable={false}>
+              <HourglassIcon size={14} />
             </div>
             <button
               onClick={handleDelete}
               className={`${iconStyles.base} ${iconStyles.active.delete} hover:scale-120`}
+              draggable={false}
             >
-              <TrashIcon className="w-4 h-4" />
+              <TrashIcon className="w-3.5 h-3.5" />
             </button>
           </>
         ) : (
@@ -485,11 +496,12 @@ export default function TodoItem({
                         todo.dueDate ? iconStyles.active.calendar : iconStyles.inactive
                       } ${todo.dueDate ? iconStyles.glow.calendar : ""}`}
                       disabled={todo.completed}
+                      draggable={false}
                     >
-                      <CalendarIcon size={16} />
+                      <CalendarIcon size={14} />
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent className={`min-w-[120px] text-center ${iconStyles.tooltip.calendar}`}>
+                  <TooltipContent className={`min-w-[120px] text-center ${iconStyles.tooltip.calendar}`} draggable={false}>
                     {format(todo.dueDate, "MMM d, yyyy")}
                   </TooltipContent>
                 </Tooltip>
@@ -501,8 +513,9 @@ export default function TodoItem({
                   todo.dueDate ? iconStyles.active.calendar : iconStyles.inactiveWithScale
                 } ${todo.dueDate ? iconStyles.glow.calendar : ""}`}
                 disabled={todo.completed}
+                draggable={false}
               >
-                <CalendarIcon size={16} />
+                <CalendarIcon size={14} />
               </button>
             )}
 
@@ -516,11 +529,12 @@ export default function TodoItem({
                         todo.note ? iconStyles.active.note : iconStyles.inactive
                       } ${todo.note ? iconStyles.glow.note : ""}`}
                       disabled={todo.completed}
+                      draggable={false}
                     >
-                      <MessageSquareIcon size={16} />
+                      <MessageSquareIcon size={14} />
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent className={`min-w-[200px] max-w-[300px] whitespace-pre-wrap text-left ${iconStyles.tooltip.note}`}>
+                  <TooltipContent className={`min-w-[200px] max-w-[300px] whitespace-pre-wrap text-left ${iconStyles.tooltip.note}`} draggable={false}>
                     {todo.note}
                   </TooltipContent>
                 </Tooltip>
@@ -532,8 +546,9 @@ export default function TodoItem({
                   todo.note ? iconStyles.active.note : iconStyles.inactiveWithScale
                 } ${todo.note ? iconStyles.glow.note : ""}`}
                 disabled={todo.completed}
+                draggable={false}
               >
-                <MessageSquareIcon size={16} />
+                <MessageSquareIcon size={14} />
               </button>
             )}
 
@@ -547,11 +562,12 @@ export default function TodoItem({
                         todo.isWaiting ? iconStyles.active.waiting : iconStyles.inactive
                       } ${todo.isWaiting ? iconStyles.glow.waiting : ""}`}
                       disabled={todo.completed}
+                      draggable={false}
                     >
-                      <HourglassIcon size={16} />
+                      <HourglassIcon size={14} />
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent className={`min-w-[100px] text-center ${iconStyles.tooltip.waiting}`}>
+                  <TooltipContent className={`min-w-[100px] text-center ${iconStyles.tooltip.waiting}`} draggable={false}>
                     Waiting...
                   </TooltipContent>
                 </Tooltip>
@@ -563,16 +579,18 @@ export default function TodoItem({
                   todo.isWaiting ? iconStyles.active.waiting : iconStyles.inactiveWithScale
                 } ${todo.isWaiting ? iconStyles.glow.waiting : ""}`}
                 disabled={todo.completed}
+                draggable={false}
               >
-                <HourglassIcon size={16} />
+                <HourglassIcon size={14} />
               </button>
             )}
 
             <button
               onClick={handleDelete}
               className={`${iconStyles.base} ${iconStyles.active.delete} hover:scale-120`}
+              draggable={false}
             >
-              <TrashIcon className="w-4 h-4" />
+              <TrashIcon className="w-3.5 h-3.5" />
             </button>
           </>
         )}

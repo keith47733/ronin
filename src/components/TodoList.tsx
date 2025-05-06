@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { useTodo } from "@/context/TodoContext";
 import { Quadrant } from "./Quadrant";
 import { QUADRANT_CONFIGS } from "@/constants/quadrants";
+import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 
 /**
  * TodoList Component
@@ -103,14 +104,19 @@ export function TodoList() {
           - Consistent styling with other quadrants
           - Drag and drop support */}
       <div className="flex-1 min-h-0 mt-2">
-        <Quadrant
-          todos={quadrants.inbox}
-          onDrop={(data) => moveTodo(data.todo, data.fromQuadrant, "inbox")}
-          quadrant="inbox"
-          title={inboxConfig.title}
-          subtitle={inboxConfig.subtitle}
-          bgColor="bg-yellow-50"
-        />
+        <SortableContext
+          items={quadrants.inbox.map((t) => t.id)}
+          strategy={verticalListSortingStrategy}
+        >
+          <Quadrant
+            todos={quadrants.inbox}
+            onDrop={(data) => moveTodo(data.todo, data.fromQuadrant, "inbox")}
+            quadrant="inbox"
+            title={inboxConfig.title}
+            subtitle={inboxConfig.subtitle}
+            bgColor="bg-yellow-50"
+          />
+        </SortableContext>
       </div>
     </div>
   );

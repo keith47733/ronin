@@ -1,20 +1,17 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React from "react";
 import { TodoList } from "@/components/TodoList";
 import { Quadrant } from "@/components/Quadrant";
 import { useTodo } from "@/context/TodoContext";
 import Image from "next/image";
 import { QuadrantKey } from "@/types/todo";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 
-interface QuadrantConfig {
-  title: string;
-  subtitle: string;
-  quadrant: QuadrantKey;
-  bgColor: string;
-}
-
-const QUADRANT_CONFIG: QuadrantConfig[] = [
+const QUADRANT_CONFIG = [
   {
     title: "DO NOW",
     subtitle: "Urgent & Important",
@@ -51,21 +48,7 @@ const QUADRANT_CONFIG: QuadrantConfig[] = [
  * - Visual dividers and logo overlay
  */
 export function DesktopLayout() {
-  const { quadrants, moveTodo } = useTodo();
-
-  const renderQuadrants = useMemo(() => {
-    return QUADRANT_CONFIG.map((config) => (
-      <Quadrant
-        key={config.quadrant}
-        title={config.title}
-        subtitle={config.subtitle}
-        todos={quadrants[config.quadrant]}
-        onDrop={(data) => moveTodo(data.todo, data.fromQuadrant, config.quadrant)}
-        quadrant={config.quadrant}
-        bgColor={config.bgColor}
-      />
-    ));
-  }, [quadrants, moveTodo]);
+  const { quadrants } = useTodo();
 
   return (
     <div className="flex flex-row h-[calc(100vh-4rem)] overflow-hidden p-2 gap-2">
@@ -81,7 +64,22 @@ export function DesktopLayout() {
         <div className="h-full relative">
           {/* Grid Container */}
           <div className="grid grid-cols-2 grid-rows-2 gap-3 h-full p-3">
-            {renderQuadrants}
+            {(QUADRANT_CONFIG as { title: string; subtitle: string; quadrant: QuadrantKey; bgColor: string }[]).map((config) => (
+              <SortableContext
+                key={config.quadrant}
+                items={quadrants[config.quadrant as QuadrantKey].map((t: any) => t.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                <Quadrant
+                  title={config.title}
+                  subtitle={config.subtitle}
+                  todos={quadrants[config.quadrant as QuadrantKey]}
+                  onDrop={() => {}}
+                  quadrant={config.quadrant as QuadrantKey}
+                  bgColor={config.bgColor}
+                />
+              </SortableContext>
+            ))}
           </div>
 
           {/* Vertical Divider */}
@@ -91,7 +89,7 @@ export function DesktopLayout() {
           <div className="absolute top-1/2 left-2 right-2 h-[1px] bg-gray-400 -translate-y-1/2 z-10 pointer-events-none"></div>
 
           {/* Centered Logo */}
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50">
             <Image
               src="/katana.png"
               alt="Katana Icon"

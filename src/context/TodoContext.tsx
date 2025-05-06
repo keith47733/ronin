@@ -31,6 +31,8 @@ interface TodoContextType {
     fromQuadrant: QuadrantKey,
     toQuadrant: QuadrantKey
   ) => void;
+  reorderTodo: (todoId: string, toQuadrant: QuadrantKey, toIndex: number) => void;
+  reorderTodosInQuadrant: (quadrant: QuadrantKey, newOrder: Todo[]) => void;
 }
 
 // Create a type for the quadrant state
@@ -261,12 +263,56 @@ export function TodoProvider({ children }: { children: React.ReactNode }) {
     (todo: Todo, fromQuadrant: QuadrantKey, toQuadrant: QuadrantKey) => {
       setTodos((prev) =>
         prev.map((t) =>
-          t.id === todo.id ? { ...t, quadrant: toQuadrant } : t
+          t.id === todo.id
+            ? {
+                ...t,
+                quadrant: toQuadrant,
+              }
+            : t
         )
       );
     },
     []
   );
+
+  /**
+   * Reorders a todo within the same quadrant
+   * @param todoId - The id of the todo to move
+   * @param toQuadrant - The quadrant key
+   * @param toIndex - The index to move the todo to
+   */
+  const reorderTodo = useCallback((todoId: string, toQuadrant: QuadrantKey, toIndex: number) => {
+    setTodos((prev) => {
+      // Get all todos in the target quadrant
+      const filtered = prev.filter((t) => t.quadrant === toQuadrant && !t.completed);
+      const other = prev.filter((t) => t.quadrant !== toQuadrant || t.completed);
+      const fromIndex = filtered.findIndex((t) => t.id === todoId);
+      if (fromIndex === -1) return prev;
+      const [moved] = filtered.splice(fromIndex, 1);
+      filtered.splice(toIndex, 0, moved);
+      // Rebuild the todos array, preserving order for other quadrants
+      const reordered = [
+        ...other,
+        ...filtered
+      ];
+      // Sort by createdAt for finished todos if needed
+      return reordered;
+    });
+  }, []);
+
+  /**
+   * Reorders todos within a specific quadrant
+   * @param quadrant - The quadrant key
+   * @param newOrder - The new ordered array of todos for that quadrant
+   */
+  const reorderTodosInQuadrant = useCallback((quadrant: QuadrantKey, newOrder: Todo[]) => {
+    setTodos((prev) => {
+      // Remove todos from this quadrant
+      const others = prev.filter((t) => t.quadrant !== quadrant);
+      // Add the reordered todos for this quadrant
+      return [...others, ...newOrder];
+    });
+  }, []);
 
   /**
    * Memoized context value to prevent unnecessary re-renders
@@ -287,6 +333,8 @@ export function TodoProvider({ children }: { children: React.ReactNode }) {
       updateTodoDueDate,
       updateTodoNote,
       moveTodo,
+      reorderTodo,
+      reorderTodosInQuadrant,
     }),
     [
       todos,
@@ -301,6 +349,8 @@ export function TodoProvider({ children }: { children: React.ReactNode }) {
       updateTodoDueDate,
       updateTodoNote,
       moveTodo,
+      reorderTodo,
+      reorderTodosInQuadrant,
     ]
   );
 
