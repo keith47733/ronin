@@ -8,34 +8,71 @@ import { useAnimation } from "@/context/AnimationContext";
 import {
   CalendarIcon,
   MessageSquareIcon,
-  HourglassIcon,
   TrashIcon,
+  Grip,
   Circle,
   CircleCheck,
   CircleCheckBig,
-  Grip,
+  HourglassIcon,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/Tooltip";
 import { format } from "date-fns";
 import styles from "./TodoItem.module.css";
 
 /**
- * Props interface for the TodoItem component
+ * TodoItem Component
+ * 
+ * A complex, interactive component that represents a single todo item in the application.
+ * It serves as the primary interface for user interactions with individual tasks.
+ * 
+ * Component Flow:
+ * 1. Initialization:
+ *    - Sets up local state for editing, animations, and UI feedback
+ *    - Configures intersection observer for fade-in animations
+ *    - Initializes drag and drop handlers
+ * 
+ * 2. User Interactions:
+ *    - Text editing (double-click to edit)
+ *    - Completion toggling (with animations)
+ *    - Due date management
+ *    - Note management
+ *    - Waiting status toggling
+ *    - Drag and drop reordering
+ * 
+ * 3. Animation States:
+ *    - Fade-in on mount
+ *    - Completion animations
+ *    - Restoration animations
+ *    - Deletion animations
+ *    - Drag and drop visual feedback
+ * 
+ * 4. Context Integration:
+ *    - Uses TodoContext for state management
+ *    - Uses ModalContext for popup dialogs
+ *    - Uses AnimationContext for coordinated animations
+ * 
+ * 5. Accessibility:
+ *    - ARIA labels for all interactive elements
+ *    - Keyboard navigation support
+ *    - Screen reader friendly structure
  */
 interface TodoItemProps {
-  todo: Todo;
-  quadrant: QuadrantKey;
-  onDragStart: (todo: Todo) => (e: React.DragEvent<HTMLDivElement>) => void;
-  onDragEnd: (e: React.DragEvent<HTMLDivElement>) => void;
-  onDrop: (e: React.DragEvent<HTMLDivElement>) => void;
-  onDragOver: (e: React.DragEvent<HTMLDivElement>) => void;
-  onDragLeave: (e: React.DragEvent<HTMLDivElement>) => void;
-  onDelete: (id: string) => void;
-  onUpdateText: (id: string, text: string) => void;
-  grabHandleProps?: any;
+  todo: Todo;                    // The todo item data
+  quadrant: QuadrantKey;         // Current quadrant location
+  onDragStart: (todo: Todo) => (e: React.DragEvent<HTMLDivElement>) => void;  // Drag start handler
+  onDragEnd: (e: React.DragEvent<HTMLDivElement>) => void;        // Drag end handler
+  onDrop: (e: React.DragEvent<HTMLDivElement>) => void;           // Drop handler
+  onDragOver: (e: React.DragEvent<HTMLDivElement>) => void;       // Drag over handler
+  onDragLeave: (e: React.DragEvent<HTMLDivElement>) => void;      // Drag leave handler
+  onDelete: (id: string) => void;                                 // Delete handler
+  onUpdateText: (id: string, text: string) => void;               // Text update handler
+  grabHandleProps?: any;                                          // Props for drag handle
 }
 
-// Add these styles near the top of the file, after the imports
+/**
+ * Animation and interaction styles for the component
+ * Organized by interaction type and state
+ */
 const iconStyles = {
   base: "p-1.5 rounded-full transition-all duration-300 border border-transparent flex items-center justify-center",
   active: {
@@ -107,16 +144,21 @@ export default function TodoItem({
   const { openModal } = useModal();
 
   // Local state management
-  const [isEditing, setIsEditing] = useState(false); // Controls text editing mode
-  const [editedText, setEditedText] = useState(todo.text); // Buffer for edited text
-  const [opacity, setOpacity] = useState(0); // Controls fade-in animation
-  const [isAnimating, setIsAnimating] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
-  const [animationStyle, setAnimationStyle] = useState<React.CSSProperties>({});
-  const itemRef = useRef<HTMLDivElement>(null);
-  const { finishedButtonRef } = useAnimation();
+  const [isEditing, setIsEditing] = useState(false);              // Text editing state
+  const [editedText, setEditedText] = useState(todo.text);        // Edited text buffer
+  const [opacity, setOpacity] = useState(0);                      // Fade-in animation state
+  const [isAnimating, setIsAnimating] = useState(false);          // Animation lock
+  const [isDragging, setIsDragging] = useState(false);            // Drag state
+  const [showCheckBig, setShowCheckBig] = useState(false);        // Completion animation state
+  const [showCircle, setShowCircle] = useState(false);            // Restoration animation state
+  const [animationStyle, setAnimationStyle] = useState<React.CSSProperties>({});  // Dynamic styles
+  const itemRef = useRef<HTMLDivElement>(null);                   // DOM reference
+  const { finishedButtonRef } = useAnimation();                   // Animation context reference
 
-  // Memoize the intersection observer callback
+  /**
+   * Intersection Observer setup for fade-in animation
+   * Observes when the todo item enters the viewport and triggers fade-in
+   */
   const observerCallback = useCallback((entries: IntersectionObserverEntry[]) => {
     entries.forEach((entry) => {
       if (entry.isIntersecting) {
@@ -125,13 +167,16 @@ export default function TodoItem({
     });
   }, []);
 
-  // Memoize the threshold array
+  // Memoize the threshold array for smooth fade-in
   const observerThreshold = useMemo(
     () => Array.from({ length: 100 }, (_, i) => i / 100),
     []
   );
 
-  // Set up intersection observer for fade-in animation
+  /**
+   * Set up intersection observer for fade-in animation
+   * Uses the parent scroll container as the root
+   */
   useEffect(() => {
     const observer = new IntersectionObserver(observerCallback, {
       root: itemRef.current?.closest(".overflow-y-auto"),
@@ -145,7 +190,10 @@ export default function TodoItem({
     return () => observer.disconnect();
   }, [observerCallback, observerThreshold]);
 
-  // Memoize event handlers
+  /**
+   * Text editing handlers
+   * Manage the todo item's text editing state and updates
+   */
   const handleTextClick = useCallback(() => {
     if (todo.completed) return;
     setIsEditing(true);
@@ -172,9 +220,8 @@ export default function TodoItem({
   }, [handleTextBlur, todo.text]);
 
   /**
-   * Opens the due date modal for setting/updating the todo's due date
-   * Calculates the modal position based on the trigger element
-   * @param {React.MouseEvent} e - The click event
+   * Due date modal handler
+   * Opens the due date modal with the todo's current due date
    */
   const handleDueDateClick = (e: React.MouseEvent) => {
     if (quadrant === "finished") return;
@@ -188,7 +235,8 @@ export default function TodoItem({
   };
 
   /**
-   * Opens the note modal for adding/editing the todo's note
+   * Note modal handler
+   * Opens the note modal with the todo's current note
    */
   const handleNoteClick = () => {
     if (quadrant === "finished") return;
@@ -199,12 +247,10 @@ export default function TodoItem({
     });
   };
 
-  // Function to get the target quadrant element
-  const getQuadrantElement = (quadrantKey: QuadrantKey) => {
-    return document.querySelector(`[data-quadrant="${quadrantKey}"]`);
-  };
-
-  // Function to calculate animation path
+  /**
+   * Animation path calculation
+   * Determines the animation path for completion/restoration
+   */
   const calculateAnimationPath = (
     isFinishing: boolean,
     isFromModal: boolean = false
@@ -225,11 +271,9 @@ export default function TodoItem({
     if (isFinishing) {
       // When finishing, animate to the center of the FINISHED button
       targetRect = finishedButtonRef.current.getBoundingClientRect();
-      // Calculate center position of the button
       const centerX = targetRect.left + targetRect.width / 2;
       const centerY = targetRect.top + targetRect.height / 2;
       
-      // Calculate the transform needed to move to the center
       const translateX = centerX - (itemRect.left + itemRect.width / 2);
       const translateY = centerY - (itemRect.top + itemRect.height / 2);
 
@@ -256,15 +300,12 @@ export default function TodoItem({
       }
       targetRect = targetQuadrant.getBoundingClientRect();
       
-      // Calculate center position of the finished card
       const centerX = itemRect.left + itemRect.width / 2;
       const centerY = itemRect.top + itemRect.height / 2;
       
-      // Calculate the transform needed to move from center to top-left of target
       const translateX = targetRect.left - centerX;
       const translateY = targetRect.top - centerY;
 
-      // If restoring from modal, use a simpler animation
       if (isFromModal) {
         return {
           transform: "scale(0)",
@@ -288,75 +329,97 @@ export default function TodoItem({
     }
   };
 
-  // Function to check if we're in mobile mode
+  /**
+   * Mobile mode detection
+   * Returns true if the viewport width is less than the lg breakpoint
+   */
   const isMobileMode = () => {
     return window.innerWidth < 1024; // lg breakpoint
   };
 
-  // Handle finish animation
+  /**
+   * Completion animation handler
+   * Manages the sequence of animations when marking a todo as complete
+   */
   const handleFinish = () => {
-    if (isMobileMode()) {
-      toggleTodo(todo.id);
-      return;
-    }
-
     setIsAnimating(true);
+    setShowCheckBig(true);
     
-    // Start the scale-to-right and fade animation
-    setAnimationStyle({
-      transform: 'translateX(50%) scaleX(0)',
-      opacity: 0,
-      transformOrigin: 'right center',
-      transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)'
-    });
-
-    // After the animation completes, toggle the todo
+    // First do the checkmark animation
     setTimeout(() => {
-      toggleTodo(todo.id);
-      setIsAnimating(false);
-      setAnimationStyle({});
-    }, 500);
+      setShowCheckBig(false);
+      
+      // Then start the shrink animation
+      setAnimationStyle({
+        transform: 'translateX(100%) scale(0.5)',
+        opacity: 0,
+        transformOrigin: 'right center',
+        transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+        position: 'relative',
+        zIndex: 1,
+        pointerEvents: 'none',
+        willChange: 'transform, opacity'
+      });
+
+      // After the shrink animation completes, toggle the todo
+      setTimeout(() => {
+        toggleTodo(todo.id);
+        setIsAnimating(false);
+        setAnimationStyle({});
+      }, 400);
+    }, 200);
   };
 
-  // Handle restore animation
+  /**
+   * Restoration animation handler
+   * Manages the sequence of animations when restoring a todo
+   */
   const handleRestore = () => {
-    if (isMobileMode()) {
-      restoreTodo(todo.id);
-      return;
-    }
-
     setIsAnimating(true);
     
-    // Start the scale-to-left and fade animation
-    setAnimationStyle({
-      transform: 'translateX(-50%) scaleX(0)',
-      opacity: 0,
-      transformOrigin: 'left center',
-      transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)'
-    });
-
-    // After the animation completes, restore the todo
+    // First show the circle
+    setShowCircle(true);
+    
+    // Then start the shrink animation
     setTimeout(() => {
-      restoreTodo(todo.id);
-      setIsAnimating(false);
-      setAnimationStyle({});
-    }, 500);
+      setAnimationStyle({
+        transform: 'translateX(-100%) scale(0.5)',
+        opacity: 0,
+        transformOrigin: 'left center',
+        transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+        position: 'relative',
+        zIndex: 1,
+        pointerEvents: 'none',
+        willChange: 'transform, opacity'
+      });
+
+      // After the shrink animation completes, restore the todo
+      setTimeout(() => {
+        restoreTodo(todo.id);
+        setIsAnimating(false);
+        setAnimationStyle({});
+        setShowCircle(false);
+      }, 400);
+    }, 200);
   };
 
-  // Handle delete animation
+  /**
+   * Deletion animation handler
+   * Manages the animation when permanently deleting a todo
+   */
   const handleDelete = () => {
-    if (isMobileMode()) {
-      permanentlyDeleteTodo(todo.id);
-      return;
-    }
-
     setIsAnimating(true);
     
     // Start the scale-down animation
     setAnimationStyle({
       transform: "scale(0)",
       opacity: 0,
+      transformOrigin: "center",
       transition: "all 0.3s ease-in-out",
+      position: 'relative',
+      zIndex: 1,
+      pointerEvents: 'none',
+      willChange: 'transform, opacity'
     });
 
     // After the scale-down completes, delete the todo
@@ -367,10 +430,12 @@ export default function TodoItem({
     }, 300);
   };
 
-  // Custom drag handlers
+  /**
+   * Drag and drop handlers
+   * Manage the todo item's drag and drop interactions
+   */
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
     setIsDragging(true);
-    // Set the drag data before calling the parent handler
     e.dataTransfer.setData("application/json", JSON.stringify({ todo, fromQuadrant: quadrant }));
     e.dataTransfer.effectAllowed = "move";
     onDragStart(todo)(e);
@@ -392,13 +457,22 @@ export default function TodoItem({
     onDragEnd(e);
   };
 
+  // Function to get the target quadrant element
+  const getQuadrantElement = (quadrantKey: QuadrantKey) => {
+    return document.querySelector(`[data-quadrant="${quadrantKey}"]`);
+  };
+
   return (
     <div
       ref={itemRef}
       className={`group relative flex items-center gap-2 p-2 rounded-lg transition-all duration-200 w-[95%] mx-auto
         ${isDragging ? "opacity-50 scale-95" : quadrant === "finished" ? "bg-red-50 hover:bg-red-100" : "bg-white hover:bg-gray-100"}
         ${todo.completed ? "opacity-50" : ""}`}
-      style={{ opacity }}
+      style={{ 
+        opacity,
+        ...animationStyle,
+        transition: isAnimating ? 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)' : 'all 0.2s ease-in-out'
+      }}
       draggable={false}
     >
       {/* Grab Handle */}
@@ -420,7 +494,13 @@ export default function TodoItem({
           aria-label="Restore task"
           draggable={false}
         >
-          <CircleCheckBig className="w-4 h-4 text-green-700" />
+          {showCheckBig ? (
+            <CircleCheckBig className="w-4 h-4 text-green-700" />
+          ) : showCircle ? (
+            <Circle className="w-4 h-4 text-green-700" />
+          ) : (
+            <CircleCheckBig className="w-4 h-4 text-green-700" />
+          )}
         </button>
       ) : (
         <button
@@ -429,7 +509,9 @@ export default function TodoItem({
           aria-label={todo.completed ? "Mark as incomplete" : "Mark as complete"}
           draggable={false}
         >
-          {todo.completed ? (
+          {showCheckBig ? (
+            <CircleCheckBig className="w-4 h-4 text-green-700" />
+          ) : todo.completed ? (
             <CircleCheck className="w-4 h-4" />
           ) : (
             <Circle className="w-4 h-4" />

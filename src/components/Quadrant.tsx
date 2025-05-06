@@ -98,7 +98,7 @@ export function Quadrant({
         </div>
       </div>
       {isOver && (
-        <div className="absolute inset-0 rounded-lg ring-2 ring-blue-500 ring-inset z-40 pointer-events-none" />
+        <div className="absolute inset-0 rounded-lg ring-2 ring-blue-500 ring-inset z-10 pointer-events-none" />
       )}
     </div>
   );

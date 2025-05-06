@@ -11,6 +11,16 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 
+/**
+ * Quadrant Configuration
+ * 
+ * Defines the structure and appearance of each quadrant in the Eisenhower Matrix.
+ * Each quadrant has:
+ * - title: The main heading for the quadrant
+ * - subtitle: The description of the quadrant's purpose
+ * - quadrant: The unique identifier for the quadrant
+ * - bgColor: The background color class for visual distinction
+ */
 const QUADRANT_CONFIG = [
   {
     title: "DO NOW",
@@ -40,12 +50,43 @@ const QUADRANT_CONFIG = [
 
 /**
  * DesktopLayout Component
- *
- * A dedicated layout component for desktop view that implements:
- * - Fixed height layout with internal scrolling
- * - Split screen with inbox and quadrants
- * - Grid-based quadrant arrangement
- * - Visual dividers and logo overlay
+ * 
+ * A sophisticated layout component designed for desktop view that implements
+ * the Eisenhower Matrix methodology in a split-screen interface.
+ * 
+ * Key Features:
+ * 1. Layout Structure:
+ *    - Split screen with 1/3 for inbox and 2/3 for quadrants
+ *    - Fixed height with internal scrolling for each section
+ *    - Grid-based quadrant arrangement (2x2)
+ * 
+ * 2. Visual Elements:
+ *    - Centered katana logo with hover effects
+ *    - Vertical and horizontal dividers
+ *    - Distinct background colors for each quadrant
+ * 
+ * 3. Drag and Drop:
+ *    - SortableContext for each quadrant
+ *    - Vertical list sorting strategy
+ *    - Smooth drag and drop animations
+ * 
+ * 4. Responsive Design:
+ *    - Maintains aspect ratio and proportions
+ *    - Preserves visual hierarchy
+ *    - Optimized for larger screens
+ * 
+ * Component Structure:
+ * DesktopLayout
+ * ├── Left Panel (Inbox)
+ * │   └── TodoList
+ * └── Right Panel (Quadrants)
+ *     ├── Grid Container
+ *     │   ├── Quadrant (DO NOW)
+ *     │   ├── Quadrant (SCHEDULE)
+ *     │   ├── Quadrant (DELEGATE)
+ *     │   └── Quadrant (DELETE)
+ *     ├── Dividers
+ *     └── Logo Overlay
  */
 export function DesktopLayout() {
   const { quadrants } = useTodo();
@@ -89,13 +130,13 @@ export function DesktopLayout() {
           <div className="absolute top-1/2 left-2 right-2 h-[1px] bg-gray-400 -translate-y-1/2 z-10 pointer-events-none"></div>
 
           {/* Centered Logo */}
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50">
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
             <Image
               src="/katana.png"
               alt="Katana Icon"
               width={72}
               height={72}
-              className="opacity-100 blur-[15%] filter brightness-0 rounded-md transition-transform duration-300 hover:scale-[1.25] rotate-[30deg]"
+              className="opacity-100 blur-[15%] filter brightness-0 rounded-md transition-transform duration-300 hover:scale-[1.2] rotate-[30deg]"
               priority
             />
           </div>

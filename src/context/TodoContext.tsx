@@ -6,17 +6,24 @@ import React, {
   useState,
   useCallback,
   useMemo,
+  useEffect,
 } from "react";
 import { Todo, QuadrantKey } from "@/types/todo";
 
 /**
- * Interface defining the shape of our Todo context
- * Contains all the state and methods needed to manage todos across the application
+ * Core state management for the Todo application
+ * 
+ * This context provides a centralized state management system for todos across the application.
+ * It handles:
+ * 1. Todo CRUD operations (Create, Read, Update, Delete)
+ * 2. Quadrant organization and movement
+ * 3. Completion status management
+ * 4. Local storage persistence
+ * 5. Drag and drop reordering
  */
 interface TodoContextType {
-  todos: Todo[]; // Complete list of all todos
-  quadrants: Record<QuadrantKey, Todo[]>; // Todos organized by quadrant
-  finished: Todo[]; // Completed todos
+  quadrants: Record<QuadrantKey, Todo[]>; // Active todos organized by quadrant
+  finished: Todo[]; // Completed todos in the finished list
   addTodo: (text: string) => void;
   deleteTodo: (id: string) => void;
   permanentlyDeleteTodo: (id: string) => void;
@@ -42,9 +49,14 @@ type QuadrantState = Record<QuadrantKey, Todo[]>;
 const TodoContext = createContext<TodoContextType | undefined>(undefined);
 
 /**
- * Custom hook to calculate quadrants from todos
- * @param todos - Array of todos
- * @returns Record of todos organized by quadrant
+ * Custom hook to organize todos into their respective quadrants
+ * This is a performance-optimized calculation that only runs when todos change
+ * 
+ * Flow:
+ * 1. Takes the flat todos array
+ * 2. Separates completed todos into the finished list
+ * 3. Distributes active todos into their respective quadrants
+ * 4. Returns an object with todos organized by quadrant
  */
 const useQuadrants = (todos: Todo[]): QuadrantState => {
   return useMemo(() => {
@@ -69,19 +81,59 @@ const useQuadrants = (todos: Todo[]): QuadrantState => {
 };
 
 /**
- * TodoProvider component that wraps the application and provides todo management functionality
- * @param children - React components that will have access to the todo context
+ * TodoProvider: The central state management component
+ * 
+ * Responsibilities:
+ * 1. Initializes and maintains the todo state
+ * 2. Provides todo management methods to child components
+ * 3. Handles persistence to localStorage
+ * 4. Manages quadrant organization
+ * 
+ * State Flow:
+ * - todos: Main state array containing all active todos
+ * - finished: Separate state for completed todos
+ * - quadrants: Derived state organizing todos by quadrant
+ * 
+ * Data Flow:
+ * 1. User actions trigger context methods
+ * 2. Methods update the state
+ * 3. State changes trigger re-renders
+ * 4. Local storage is updated automatically
  */
 export function TodoProvider({ children }: { children: React.ReactNode }) {
   // Main state for all todos
   const [todos, setTodos] = useState<Todo[]>([]);
+  const [finished, setFinished] = useState<Todo[]>([]);
   const quadrants = useQuadrants(todos);
 
+  useEffect(() => {
+    const savedTodos = localStorage.getItem("todos");
+    const savedFinished = localStorage.getItem("finished");
+
+    if (savedTodos) {
+      setTodos(JSON.parse(savedTodos));
+    }
+    if (savedFinished) {
+      setFinished(JSON.parse(savedFinished));
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("todos", JSON.stringify(todos));
+  }, [todos]);
+
+  useEffect(() => {
+    localStorage.setItem("finished", JSON.stringify(finished));
+  }, [finished]);
+
   /**
-   * Adds a new todo to the list
-   * @param text - The text content of the new todo
-   * @remarks
-   * New todos are always created in the "inbox" quadrant
+   * Adds a new todo to the inbox quadrant
+   * 
+   * Flow:
+   * 1. Validates input (prevents empty todos)
+   * 2. Creates new todo with unique ID and timestamp
+   * 3. Adds to the todos array
+   * 4. Automatically persists to localStorage
    */
   const addTodo = useCallback((text: string) => {
     if (!text.trim()) return; // Prevent empty todos
@@ -97,13 +149,14 @@ export function TodoProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   /**
-   * Marks a todo as finished
-   * @param id - The ID of the todo to mark as finished
-   * @remarks
-   * When a todo is marked as finished:
-   * 1. Creates an exact copy (including ID) of the todo in the finished list
-   * 2. Marks the copy as inactive
-   * 3. Deletes the original active todo
+   * Marks a todo as finished and moves it to the finished list
+   * 
+   * Flow:
+   * 1. Creates a copy of the todo with completed status
+   * 2. Preserves the original quadrant information
+   * 3. Removes the original todo
+   * 4. Adds the completed copy to the state
+   * 5. Triggers re-render and storage update
    */
   const deleteTodo = useCallback((id: string) => {
     setTodos((prev) => {
@@ -136,14 +189,15 @@ export function TodoProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   /**
-   * Restores a finished todo back to its active state
-   * @param id - The ID of the todo to restore
-   * @remarks
-   * When a todo is restored:
-   * 1. Creates an exact copy (including ID) of the finished todo
-   * 2. Places it in the quadrant it was in when finished (currentQuadrant)
-   * 3. Marks it as active
-   * 4. Deletes the finished copy
+   * Restores a finished todo back to active status
+   * 
+   * Flow:
+   * 1. Finds the finished todo
+   * 2. Creates a copy with active status
+   * 3. Preserves the original quadrant
+   * 4. Removes from finished list
+   * 5. Adds back to active todos
+   * 6. Triggers re-render and storage update
    */
   const restoreTodo = useCallback((id: string) => {
     setTodos((prev) => {
@@ -168,10 +222,17 @@ export function TodoProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   /**
-   * Toggles the completion status of a todo
-   * When marking as complete, moves the todo to the finished list
-   * When marking as incomplete, restores the todo to its original quadrant
-   * @param id - The ID of the todo to toggle
+   * Toggles a todo's completion status
+   * 
+   * Flow:
+   * 1. When marking complete:
+   *    - Preserves current quadrant
+   *    - Sets completed flag
+   *    - Moves to finished list
+   * 2. When marking incomplete:
+   *    - Restores to original quadrant
+   *    - Clears completed flag
+   *    - Returns to active todos
    */
   const toggleTodo = useCallback((id: string) => {
     setTodos((prev) =>
@@ -320,7 +381,6 @@ export function TodoProvider({ children }: { children: React.ReactNode }) {
    */
   const value = useMemo(
     () => ({
-      todos,
       quadrants,
       finished: quadrants.finished,
       addTodo,
@@ -337,7 +397,6 @@ export function TodoProvider({ children }: { children: React.ReactNode }) {
       reorderTodosInQuadrant,
     }),
     [
-      todos,
       quadrants,
       addTodo,
       deleteTodo,

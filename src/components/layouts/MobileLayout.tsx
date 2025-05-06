@@ -9,12 +9,55 @@ import { QuadrantKey } from "@/types/todo";
 
 /**
  * MobileLayout Component
- *
- * A dedicated layout component for mobile view that implements:
- * - Vertical stacking of components
- * - Natural height based on content
- * - Full-width sections
- * - Touch-friendly interface
+ * 
+ * A streamlined layout component optimized for mobile devices that implements
+ * the Eisenhower Matrix methodology in a vertical, scrollable interface.
+ * 
+ * Key Features:
+ * 1. Layout Structure:
+ *    - Vertical stacking of components
+ *    - Full-width sections
+ *    - Natural height based on content
+ *    - Smooth scrolling behavior
+ * 
+ * 2. Touch Optimization:
+ *    - Larger touch targets
+ *    - Adequate spacing between elements
+ *    - Touch-friendly drag and drop
+ *    - Responsive to different screen sizes
+ * 
+ * 3. Performance:
+ *    - Optimized for mobile devices
+ *    - Efficient rendering of quadrants
+ *    - Smooth animations
+ *    - Minimal DOM nesting
+ * 
+ * 4. User Experience:
+ *    - Clear visual hierarchy
+ *    - Easy navigation
+ *    - Intuitive interactions
+ *    - Consistent spacing
+ * 
+ * Component Structure:
+ * MobileLayout
+ * ├── Inbox Section
+ * │   └── TodoList
+ * └── Quadrants Section
+ *     ├── Quadrant (DO NOW)
+ *     ├── Quadrant (SCHEDULE)
+ *     ├── Quadrant (DELEGATE)
+ *     └── Quadrant (DELETE)
+ */
+
+/**
+ * Quadrant Configuration
+ * 
+ * Defines the structure and appearance of each quadrant in the Eisenhower Matrix.
+ * Each quadrant has:
+ * - title: The main heading for the quadrant
+ * - subtitle: The description of the quadrant's purpose
+ * - quadrant: The unique identifier for the quadrant
+ * - bgColor: The background color class for visual distinction
  */
 const QUADRANT_CONFIG = [
   {

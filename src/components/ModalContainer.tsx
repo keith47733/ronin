@@ -8,11 +8,11 @@ import NoteModal from "@/components/NoteModal";
 import { DueDateModalData, NoteModalData } from "@/types/modal";
 
 export default function ModalContainer() {
-  const { modalState, closeModal } = useModal();
+  const { activeModal, modalData, closeModal } = useModal();
   const { updateTodoDueDate, updateTodoNote } = useTodo();
 
   const handleSaveDueDate = (date: Date | undefined) => {
-    const data = modalState.data as DueDateModalData;
+    const data = modalData as DueDateModalData;
     if (data?.todoId) {
       updateTodoDueDate(data.todoId, date);
     }
@@ -20,7 +20,7 @@ export default function ModalContainer() {
   };
 
   const handleSaveNote = (note: string) => {
-    const data = modalState.data as NoteModalData;
+    const data = modalData as NoteModalData;
     if (data?.todoId) {
       updateTodoNote(data.todoId, note);
     }
@@ -29,20 +29,20 @@ export default function ModalContainer() {
 
   return (
     <>
-      {modalState.type === "dueDate" && (
+      {activeModal === "dueDate" && (
         <DueDateModal
-          isOpen={modalState.isOpen}
+          isOpen={true}
           onClose={closeModal}
           onSave={handleSaveDueDate}
-          initialDate={(modalState.data as DueDateModalData)?.initialDate}
+          initialDate={(modalData as DueDateModalData)?.initialDate}
         />
       )}
-      {modalState.type === "note" && (
+      {activeModal === "note" && (
         <NoteModal
-          isOpen={modalState.isOpen}
+          isOpen={true}
           onClose={closeModal}
           onSave={handleSaveNote}
-          initialNote={(modalState.data as NoteModalData)?.initialNote}
+          initialNote={(modalData as NoteModalData)?.initialNote}
         />
       )}
     </>
