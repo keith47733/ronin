@@ -10,43 +10,7 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-
-/**
- * Quadrant Configuration
- * 
- * Defines the structure and appearance of each quadrant in the Eisenhower Matrix.
- * Each quadrant has:
- * - title: The main heading for the quadrant
- * - subtitle: The description of the quadrant's purpose
- * - quadrant: The unique identifier for the quadrant
- * - bgColor: The background color class for visual distinction
- */
-const QUADRANT_CONFIG = [
-  {
-    title: "DO NOW",
-    subtitle: "Urgent & Important",
-    quadrant: "urgentImportant",
-    bgColor: "bg-green-50",
-  },
-  {
-    title: "SCHEDULE",
-    subtitle: "Not Urgent & Important",
-    quadrant: "notUrgentImportant",
-    bgColor: "bg-blue-50",
-  },
-  {
-    title: "DELEGATE",
-    subtitle: "Urgent & Not Important",
-    quadrant: "urgentNotImportant",
-    bgColor: "bg-orange-50",
-  },
-  {
-    title: "DELETE",
-    subtitle: "Not Urgent & Not Important",
-    quadrant: "notUrgentNotImportant",
-    bgColor: "bg-red-50",
-  },
-];
+import { QUADRANT_CONFIGS } from "@/constants/quadrants";
 
 /**
  * DesktopLayout Component
@@ -92,7 +56,7 @@ export function DesktopLayout() {
   const { quadrants } = useTodo();
 
   return (
-    <div className="flex flex-row h-[calc(100vh-4rem)] overflow-hidden p-2 gap-2">
+    <div className="flex flex-row h-[calc(100vh-80px)] overflow-hidden p-2 gap-2">
       {/* Left Panel - Inbox */}
       <div className="w-1/3 h-full">
         <div className="h-full border border-gray-400 rounded-lg p-2">
@@ -105,22 +69,23 @@ export function DesktopLayout() {
         <div className="h-full relative">
           {/* Grid Container */}
           <div className="grid grid-cols-2 grid-rows-2 gap-3 h-full p-3">
-            {(QUADRANT_CONFIG as { title: string; subtitle: string; quadrant: QuadrantKey; bgColor: string }[]).map((config) => (
-              <SortableContext
-                key={config.quadrant}
-                items={quadrants[config.quadrant as QuadrantKey].map((t: any) => t.id)}
-                strategy={verticalListSortingStrategy}
-              >
-                <Quadrant
-                  title={config.title}
-                  subtitle={config.subtitle}
-                  todos={quadrants[config.quadrant as QuadrantKey]}
-                  onDrop={() => {}}
-                  quadrant={config.quadrant as QuadrantKey}
-                  bgColor={config.bgColor}
-                />
-              </SortableContext>
-            ))}
+            {(["urgentImportant", "notUrgentImportant", "urgentNotImportant", "notUrgentNotImportant"] as QuadrantKey[]).map((quadrantKey) => {
+              const config = QUADRANT_CONFIGS[quadrantKey];
+              return (
+                <SortableContext
+                  key={config.key}
+                  items={quadrants[config.key].map((t: any) => t.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <Quadrant
+                    todos={quadrants[config.key]}
+                    onDrop={() => {}}
+                    quadrant={config.key}
+                    config={config}
+                  />
+                </SortableContext>
+              );
+            })}
           </div>
 
           {/* Vertical Divider */}
@@ -130,7 +95,7 @@ export function DesktopLayout() {
           <div className="absolute top-1/2 left-2 right-2 h-[1px] bg-gray-400 -translate-y-1/2 z-10 pointer-events-none"></div>
 
           {/* Centered Logo */}
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[1000]">
             <Image
               src="/katana.png"
               alt="Katana Icon"

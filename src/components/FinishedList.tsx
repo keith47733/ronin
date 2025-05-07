@@ -34,7 +34,7 @@ export function FinishedList({ tasks, onRestore, onClose }: FinishedListProps) {
       </div>
       <div className="max-h-[60vh] overflow-y-auto">
         {tasks.length === 0 ? (
-          <div className="p-4 text-gray-500 text-center">No finished tasks</div>
+          <div className="mb-6 text-gray-500 text-center">No finished tasks</div>
         ) : (
           <div className="p-2 space-y-2">
             {tasks.map((task) => (

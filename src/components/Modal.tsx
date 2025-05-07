@@ -22,6 +22,7 @@ import { XCircle } from "lucide-react";
  * @param {string} [props.className] - Additional CSS classes
  * @param {React.CSSProperties} [props.style] - Additional inline styles
  * @param {Object} [props.triggerPosition] - Position of the trigger element
+ * @param {string} [props.headerClassName] - Optional className for header
  */
 
 interface ModalProps {
@@ -32,6 +33,9 @@ interface ModalProps {
   className?: string; // Additional CSS classes
   style?: CSSProperties; // Additional inline styles
   triggerPosition?: { x: number; y: number };
+  headerClassName?: string; // Optional className for header
+  subtitle?: string; // Optional subtitle for the modal
+  backgroundClassName?: string;
 }
 
 export function Modal({
@@ -42,6 +46,9 @@ export function Modal({
   className = "",
   style,
   triggerPosition,
+  headerClassName = "bg-white border-b border-gray-200 rounded-t-lg",
+  subtitle,
+  backgroundClassName = "bg-white",
 }: ModalProps) {
   // Reference to the modal container for DOM operations
   const modalRef = useRef<HTMLDivElement>(null);
@@ -67,10 +74,11 @@ export function Modal({
     };
 
     if (isOpen) {
+      if (typeof window !== "undefined" && window.innerWidth >= 1024) {
+        document.body.style.overflow = "hidden";
+      }
       document.addEventListener("keydown", handleKeyDown);
       document.addEventListener("mousedown", handleClickOutside);
-      // Prevent scrolling when modal is open
-      document.body.style.overflow = "hidden";
     }
 
     return () => {
@@ -109,7 +117,7 @@ export function Modal({
       };
 
   return (
-    <div className="fixed inset-0 z-50">
+    <div className="fixed inset-0 z-[1100]">
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-black/30 backdrop-blur-sm"
@@ -119,23 +127,25 @@ export function Modal({
       {/* Modal */}
       <div
         ref={modalRef}
-        className={`bg-white rounded-lg shadow-xl ${className}`}
+        className={`rounded-lg shadow-xl border min-w-[300px] mb-4 ${backgroundClassName} ${className}`}
         style={modalStyle}
       >
         {/* Header */}
-        <div className="p-3 border-b border-gray-200 flex justify-between items-center bg-white rounded-t-lg">
-          <h2 className="text-lg title px-4 text-gray-900">{title}</h2>
+        <div className={`flex items-center justify-between gap-2 p-4 ${headerClassName}`}>
+          <h2 className="text-lg font-semibold title text-gray-900 flex-1 text-left">{title}</h2>
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-700"
+            className="text-gray-500 hover:text-gray-700 flex-shrink-0"
             aria-label="Close modal"
           >
             <XCircle className="h-5 w-5" />
           </button>
         </div>
-
+        {subtitle && (
+          <div className="border-b border-gray-400 mx-4 mt-1" />
+        )}
         {/* Content */}
-        <div className="p-3 overflow-y-auto">{children}</div>
+        <div className="p-2 overflow-y-auto">{children}</div>
       </div>
     </div>
   );

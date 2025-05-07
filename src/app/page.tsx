@@ -20,6 +20,7 @@ import {
 import { useTodo } from "@/context/TodoContext";
 import { QuadrantKey } from "@/types/todo";
 import TodoItem from "@/components/TodoItem";
+import { useCardWidth } from "@/hooks/useCardWidth";
 
 /**
  * Main application component that renders the appropriate layout based on screen size
@@ -33,6 +34,13 @@ export default function Home() {
   const { quadrants, moveTodo, reorderTodosInQuadrant } = useTodo();
   const [activeId, setActiveId] = React.useState<string | null>(null);
   const sensors = useSensors(useSensor(PointerSensor));
+  const [hasMounted, setHasMounted] = React.useState(false);
+  const [draggedCardWidth, setDraggedCardWidth] = React.useState<number | undefined>(undefined);
+  const cardWidth = useCardWidth();
+
+  React.useEffect(() => {
+    setHasMounted(true);
+  }, []);
 
   // Find the active todo and its quadrant
   const activeTodo = React.useMemo(() => {
@@ -54,10 +62,16 @@ export default function Home() {
 
   const handleDragStart = (event: any) => {
     setActiveId(event.active.id as string);
+    // Find the DOM node for the dragged card
+    const cardElement = document.querySelector(`[data-todo-id="${event.active.id}"]`);
+    if (cardElement) {
+      setDraggedCardWidth((cardElement as HTMLElement).offsetWidth);
+    }
   };
 
   const handleDragEnd = (event: any) => {
     setActiveId(null);
+    setDraggedCardWidth(undefined);
     const { active, over } = event;
     if (!over) return;
     const fromQuadrant = getQuadrantByTodoId(active.id);
@@ -90,7 +104,10 @@ export default function Home() {
 
   const handleDragCancel = () => {
     setActiveId(null);
+    setDraggedCardWidth(undefined);
   };
+
+  if (!hasMounted) return null;
 
   return (
     <DndContext
@@ -103,17 +120,18 @@ export default function Home() {
       {isDesktop ? <DesktopLayout /> : <MobileLayout />}
       <DragOverlay dropAnimation={null}>
         {activeTodo ? (
-          <div style={{ background: '#fff', borderRadius: 8, width: 320 }}>
+          <div className="bg-white rounded overflow-hidden px-2">
             <TodoItem
               todo={activeTodo}
               quadrant={getQuadrantByTodoId(activeTodo.id) || "inbox"}
               onDragStart={() => () => {}}
-              onDragEnd={() => {}}
-              onDrop={() => {}}
-              onDragOver={() => {}}
-              onDragLeave={() => {}}
-              onDelete={() => {}}
-              onUpdateText={() => {}}
+              onDragEnd={() => {} }
+              onDrop={() => {} }
+              onDragOver={() => {} }
+              onDragLeave={() => {} }
+              onDelete={() => {} }
+              onUpdateText={() => {} }
+              isOverlay
             />
           </div>
         ) : null}

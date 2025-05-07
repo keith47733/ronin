@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { CircleCheckBig } from "lucide-react";
 import FinishedModal from "@/components/FinishedModal";
 import Image from "next/image";
+import FinishedButtonInHeader from "@/components/FloatingFinishedButton";
 
 /**
  * Header Component
@@ -64,9 +65,10 @@ export default function Header() {
 
   return (
     <>
-      <header className="flex flex-col lg:flex-row lg:items-center justify-between p-3 bg-black text-white">
-        <div className="flex items-center justify-between lg:justify-start h-10">
-          <div className="flex items-center gap-2">
+      <header className="relative flex flex-col p-3 bg-black text-white min-h-[72px]">
+        {/* First row: Logo/Title (left), Finished Button (right) */}
+        <div className="flex items-center justify-between w-full h-full">
+          <div className="flex items-center gap-2 z-10 h-full">
             <Image
               src="/ronin.png"
               alt="Ronin Logo"
@@ -78,61 +80,20 @@ export default function Header() {
               RONIN
             </h1>
           </div>
-          <div className="relative lg:hidden flex items-center">
-            <Button
-              ref={finishedButtonRef}
-              variant="ghost"
-              onClick={handleOpenFinished}
-              className="text-white font-ronin text-5xl font-bold p-1 ring-1 ring-gray-500 hover:bg-red-700/50 hover:ring-gray-300"
-            >
-              <CircleCheckBig className="h-6 w-6" />
-            </Button>
-            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
-              {finished.length}
-            </span>
-          </div>
         </div>
-        <div className="text-right py-1 lg:hidden flex items-center justify-end">
+        {/* Second row: Tagline, right-aligned on mobile only */}
+        <div className="flex items-center justify-end w-full mt-1 lg:hidden">
           <h2 className="text-4xl font-bold font-ronin tracking-wider">
             DIVIDE AND CONQUER
           </h2>
         </div>
-        <div className="hidden lg:block text-center flex items-center">
-          <h2 className="text-4xl font-bold font-ronin tracking-wider">
+        {/* Centered tagline for desktop (hidden on mobile) */}
+        <div className="hidden lg:flex w-full justify-center items-center absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none select-none z-20">
+          <h2 className="text-4xl font-bold font-ronin tracking-wider text-center">
             DIVIDE AND CONQUER
           </h2>
-        </div>
-        <div className="hidden lg:flex items-center relative">
-          <Button
-            ref={finishedButtonRef}
-            variant="ghost"
-            onClick={handleOpenFinished}
-            className="text-white font-ronin text-5xl font-bold p-1 ring-1 ring-gray-500 hover:bg-red-700/50 hover:ring-gray-300"
-          >
-            <CircleCheckBig className="h-6 w-6" />
-          </Button>
-          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
-            {finished.length}
-          </span>
         </div>
       </header>
-
-      <div className={`fixed top-4 right-4 z-50 transition-all duration-300 lg:hidden ${
-        isScrolled ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none'
-      }`}>
-        <Button
-          ref={finishedButtonRef}
-          variant="ghost"
-          onClick={handleOpenFinished}
-          className="bg-black/90 backdrop-blur-sm text-white font-ronin text-5xl font-bold p-2 ring-1 ring-gray-500 hover:bg-red-700/50 hover:ring-gray-300 shadow-lg"
-        >
-          <CircleCheckBig className="h-6 w-6" />
-        </Button>
-        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
-          {finished.length}
-        </span>
-      </div>
-
       <FinishedModal
         isOpen={activeModal === "finished"}
         onClose={closeModal}

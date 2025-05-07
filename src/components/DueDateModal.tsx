@@ -101,20 +101,21 @@ export default function DueDateModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Set Due Date"
+      title="SET DUE DATE"
       className="w-[300px]"
+      backgroundClassName="bg-white"
     >
-      <div className="flex flex-col gap-2 py-2p">
-        <div className="w-full flex justify-center">
+      <div className="flex flex-col gap-2 pt-1 pb-0 bg-white">
+        <div className="w-full flex justify-center text-sm">
           <DatePicker
             selected={selectedDate}
             onChange={handleDateChange}
             inline
-            calendarClassName="border-0 shadow-none"
+            calendarClassName="border-0 shadow-none text-sm"
             dayClassName={(date) =>
               date.getTime() === selectedDate?.getTime()
-                ? "bg-blue-500 text-white hover:bg-blue-600"
-                : "hover:bg-gray-100"
+                ? "bg-blue-500 text-white hover:bg-blue-600 text-sm"
+                : "hover:bg-gray-100 text-sm"
             }
           />
         </div>
@@ -127,7 +128,7 @@ export default function DueDateModal({
                 today.setHours(0, 0, 0, 0);
                 setSelectedDate(today);
               }}
-              className={`px-3 py-1.5 text-xs font-medium rounded-full transition-colors ${
+              className={`px-3 py-1.5 text-sm font-medium rounded-full transition-colors ${
                 selectedDate && isToday(selectedDate)
                   ? "bg-blue-500 text-white hover:bg-blue-600"
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -142,7 +143,7 @@ export default function DueDateModal({
                 tomorrow.setHours(0, 0, 0, 0);
                 setSelectedDate(tomorrow);
               }}
-              className={`px-3 py-1.5 text-xs font-medium rounded-full transition-colors ${
+              className={`px-3 py-1.5 text-sm font-medium rounded-full transition-colors ${
                 selectedDate && isTomorrow(selectedDate)
                   ? "bg-blue-500 text-white hover:bg-blue-600"
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -155,7 +156,7 @@ export default function DueDateModal({
           <div className="flex justify-end">
             <button
               onClick={() => onSave(selectedDate)}
-              className="mb-2 px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-md hover:bg-blue-600 transition-colors"
+              className="px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-md hover:bg-blue-600 transition-colors"
             >
               Save
             </button>

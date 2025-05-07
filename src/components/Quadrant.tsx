@@ -1,11 +1,11 @@
 "use client";
 
 import React, { useState } from "react";
-import { Todo, QuadrantKey } from "@/types/todo";
+import { Todo, QuadrantKey, QuadrantConfig } from "@/types/todo";
 import { DndListView } from "@/components/DndListView";
 import TodoItem from "@/components/TodoItem";
 import { useTodo } from "@/context/TodoContext";
-import { useDroppable } from "@dnd-kit/core";
+import { useDroppable, useDndContext } from "@dnd-kit/core";
 
 /**
  * Quadrant Component
@@ -42,40 +42,83 @@ interface QuadrantProps {
   todos: Todo[];
   onDrop: (data: { todo: Todo; fromQuadrant: QuadrantKey }) => void;
   quadrant: QuadrantKey;
-  title: string;
-  subtitle: string;
-  bgColor: string;
+  config: QuadrantConfig;
 }
 
 export function Quadrant({
   todos,
   onDrop,
   quadrant,
-  title,
-  subtitle,
-  bgColor,
+  config,
 }: QuadrantProps) {
-  const { reorderTodosInQuadrant } = useTodo();
+  const { reorderTodosInQuadrant, moveTodo } = useTodo();
   const { isOver, setNodeRef } = useDroppable({ id: quadrant });
+  const { active, over } = useDndContext();
+
+  const todoIds = todos.map(t => t.id);
+  // Show blue outline if a drag is in progress and the dragged item is over this quadrant (including its children)
+  const showRing = !!active && (over?.id === quadrant || (over?.id && todoIds.includes(String(over.id))));
 
   const handleReorder = (newOrder: Todo[]) => {
     reorderTodosInQuadrant(quadrant, newOrder);
   };
 
+  const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
+    // Only handle drop if this quadrant is the drop target
+    if (over?.id === quadrant && active) {
+      // Get the dragged todo's id and fromQuadrant
+      const { id: draggedId, data } = active;
+      let fromQuadrant = null;
+      let todo = null;
+      if (data?.current) {
+        fromQuadrant = data.current.fromQuadrant;
+        todo = data.current.todo;
+      }
+      // Fallback: try to find the todo in this quadrant
+      if (!todo) {
+        todo = todos.find((t) => t.id === draggedId);
+      }
+      if (!todo || !fromQuadrant) return;
+      // If the todo is already in this quadrant and at the end, do nothing
+      if (todo.quadrant === quadrant && todos[todos.length - 1]?.id === todo.id) return;
+      // Move to end
+      if (fromQuadrant === quadrant) {
+        reorderTodosInQuadrant(quadrant, [
+          ...todos.filter((t) => t.id !== todo.id),
+          todo,
+        ]);
+      } else {
+        // Move from another quadrant
+        // Use moveTodo to update the quadrant, then reorder
+        moveTodo(todo, fromQuadrant, quadrant);
+        reorderTodosInQuadrant(quadrant, [
+          ...todos,
+          { ...todo, quadrant },
+        ]);
+      }
+    }
+  };
+
   return (
     <div
       ref={setNodeRef}
-      className={`rounded-lg shadow-soft ${bgColor} h-full flex flex-col overflow-hidden relative`}
+      className={`rounded-lg shadow-soft ${config.bgColor} h-full flex flex-col overflow-hidden relative`}
       data-quadrant={quadrant}
+      onDragOver={(e) => {
+        // Prevent default to allow drop
+        if (over?.id === quadrant) e.preventDefault();
+      }}
+      onDrop={handleDrop}
     >
       {/* Header */}
-      <div className="px-4 py-1 border-b border-gray-200 text-center flex-shrink-0 bg-white/50 backdrop-blur-sm relative z-[1] rounded-t-lg">
-        <h2 className="title text-lg tracking-wide">{title}</h2>
-        <p className="subtitle text-sm text-gray-600">{subtitle}</p>
+      <div className={`px-4 py-1 px-2 text-center flex-shrink-0 ${config.headerBgColor} backdrop-blur-sm relative z-[1] rounded-t-lg`}>
+        <h2 className="title text-lg tracking-wide">{config.title}</h2>
+        <p className="subtitle text-sm text-gray-600">{config.subtitle}</p>
+        <div className="border-b border-gray-400 mx-1 mt-1" />
       </div>
       {/* Content */}
       <div className="flex-1 relative overflow-hidden">
-        <div className="mt-2 mb-2 h-full">
+        <div className="mt-2 mb-2 h-full pb-2">
           <DndListView
             items={todos}
             onReorder={handleReorder}
@@ -85,7 +128,7 @@ export function Quadrant({
                 quadrant={quadrant}
                 grabHandleProps={{ ...attributes, ...listeners }}
                 onDragStart={() => () => {}}
-                onDragEnd={() => {}}
+                onDragEnd={() => {} }
                 onDrop={() => {}}
                 onDragOver={() => {}}
                 onDragLeave={() => {}}
@@ -94,10 +137,12 @@ export function Quadrant({
               />
             )}
             listClassName="gap-1"
+            gradientColor={config.gradientColor}
+            quadrantId={quadrant}
           />
         </div>
       </div>
-      {isOver && (
+      {showRing && (
         <div className="absolute inset-0 rounded-lg ring-2 ring-blue-500 ring-inset z-10 pointer-events-none" />
       )}
     </div>

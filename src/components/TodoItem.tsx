@@ -67,6 +67,8 @@ interface TodoItemProps {
   onDelete: (id: string) => void;                                 // Delete handler
   onUpdateText: (id: string, text: string) => void;               // Text update handler
   grabHandleProps?: any;                                          // Props for drag handle
+  onRestore?: () => void;                                         // Optional restore handler
+  isOverlay?: boolean;                                           // Optional: true if rendered in DragOverlay
 }
 
 /**
@@ -130,6 +132,8 @@ export default function TodoItem({
   onDelete,
   onUpdateText,
   grabHandleProps,
+  onRestore,
+  isOverlay = false,
 }: TodoItemProps) {
   // Context hooks for state management
   const {
@@ -354,7 +358,7 @@ export default function TodoItem({
         transform: 'translateX(100%) scale(0.5)',
         opacity: 0,
         transformOrigin: 'right center',
-        transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
         position: 'relative',
         zIndex: 1,
         pointerEvents: 'none',
@@ -366,7 +370,7 @@ export default function TodoItem({
         toggleTodo(todo.id);
         setIsAnimating(false);
         setAnimationStyle({});
-      }, 400);
+      }, 300);
     }, 200);
   };
 
@@ -386,7 +390,7 @@ export default function TodoItem({
         transform: 'translateX(-100%) scale(0.5)',
         opacity: 0,
         transformOrigin: 'left center',
-        transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
         position: 'relative',
         zIndex: 1,
         pointerEvents: 'none',
@@ -399,7 +403,10 @@ export default function TodoItem({
         setIsAnimating(false);
         setAnimationStyle({});
         setShowCircle(false);
-      }, 400);
+        if (typeof onRestore === 'function') {
+          onRestore();
+        }
+      }, 300);
     }, 200);
   };
 
@@ -465,8 +472,10 @@ export default function TodoItem({
   return (
     <div
       ref={itemRef}
-      className={`group relative flex items-center gap-2 p-2 rounded-lg transition-all duration-200 w-[95%] mx-auto
-        ${isDragging ? "opacity-50 scale-95" : quadrant === "finished" ? "bg-red-50 hover:bg-red-100" : "bg-white hover:bg-gray-100"}
+      data-todo-id={todo.id}
+      className={`group relative flex items-center gap-2 py-1 ${isOverlay ? "" : "px-1"} rounded-lg transition-all duration-200 
+        ${isOverlay ? "w-full" : isDragging ? "w-full" : "w-[95%] mx-auto"}
+        ${isDragging || isOverlay ? "opacity-50 scale-95 bg-white" : "bg-white hover:bg-gray-100"}
         ${todo.completed ? "opacity-50" : ""}`}
       style={{ 
         opacity,
@@ -519,8 +528,8 @@ export default function TodoItem({
         </button>
       )}
 
-      {/* Task Name Input */}
-      <div className="flex-1 min-w-0 pointer-events-none" draggable={false}>
+      {/* Task Name Input - make it grow to fill space */}
+      <div className="flex-1 min-w-0 overflow-hidden" draggable={false}>
         {isEditing ? (
           <input
             type="text"

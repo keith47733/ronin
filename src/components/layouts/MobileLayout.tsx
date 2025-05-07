@@ -6,6 +6,7 @@ import { Quadrant } from "@/components/Quadrant";
 import { useTodo } from "@/context/TodoContext";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { QuadrantKey } from "@/types/todo";
+import { QUADRANT_CONFIGS } from "@/constants/quadrants";
 
 /**
  * MobileLayout Component
@@ -59,32 +60,6 @@ import { QuadrantKey } from "@/types/todo";
  * - quadrant: The unique identifier for the quadrant
  * - bgColor: The background color class for visual distinction
  */
-const QUADRANT_CONFIG = [
-  {
-    title: "DO NOW",
-    subtitle: "Urgent & Important",
-    quadrant: "urgentImportant",
-    bgColor: "bg-green-50",
-  },
-  {
-    title: "SCHEDULE",
-    subtitle: "Not Urgent & Important",
-    quadrant: "notUrgentImportant",
-    bgColor: "bg-blue-50",
-  },
-  {
-    title: "DELEGATE",
-    subtitle: "Urgent & Not Important",
-    quadrant: "urgentNotImportant",
-    bgColor: "bg-orange-50",
-  },
-  {
-    title: "DELETE",
-    subtitle: "Not Urgent & Not Important",
-    quadrant: "notUrgentNotImportant",
-    bgColor: "bg-red-50",
-  },
-];
 
 export function MobileLayout() {
   const { quadrants } = useTodo();
@@ -99,22 +74,23 @@ export function MobileLayout() {
       {/* Quadrants Section */}
       <div className="w-full p-3">
         <div className="space-y-3">
-          {(QUADRANT_CONFIG as { title: string; subtitle: string; quadrant: QuadrantKey; bgColor: string }[]).map((config) => (
-            <SortableContext
-              key={config.quadrant}
-              items={quadrants[config.quadrant as QuadrantKey].map((t: any) => t.id)}
-              strategy={verticalListSortingStrategy}
-            >
-              <Quadrant
-                title={config.title}
-                subtitle={config.subtitle}
-                todos={quadrants[config.quadrant as QuadrantKey]}
-                onDrop={() => {}}
-                quadrant={config.quadrant as QuadrantKey}
-                bgColor={config.bgColor}
-              />
-            </SortableContext>
-          ))}
+          {(["urgentImportant", "notUrgentImportant", "urgentNotImportant", "notUrgentNotImportant"] as QuadrantKey[]).map((quadrantKey) => {
+            const config = QUADRANT_CONFIGS[quadrantKey];
+            return (
+              <SortableContext
+                key={config.key}
+                items={quadrants[config.key].map((t: any) => t.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                <Quadrant
+                  todos={quadrants[config.key]}
+                  onDrop={() => {}}
+                  quadrant={config.key}
+                  config={config}
+                />
+              </SortableContext>
+            );
+          })}
         </div>
       </div>
     </div>

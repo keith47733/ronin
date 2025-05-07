@@ -50,6 +50,7 @@ export interface QuadrantConfig {
   title: string;
   subtitle: string;
   bgColor: string;
+  headerBgColor: string;
   gradientColor: string;
   chevronColor: string;
 }

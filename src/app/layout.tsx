@@ -6,6 +6,7 @@ import { ModalProvider } from "@/context/ModalContext";
 import { AnimationProvider } from "@/context/AnimationContext";
 import Header from "@/components/Header";
 import ModalContainer from "@/components/ModalContainer";
+import FinishedButtonInHeader from "@/components/FloatingFinishedButton";
 import { karla, lato, ronin } from "./fonts";
 import "./globals.css";
 
@@ -27,6 +28,9 @@ export default function RootLayout({ children }: RootLayoutProps) {
       lang="en"
       className={`${karla.variable} ${lato.variable} ${ronin.variable}`}
     >
+      <head>
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+      </head>
       <body>
         <TodoProvider>
           <ModalProvider>
@@ -34,6 +38,9 @@ export default function RootLayout({ children }: RootLayoutProps) {
               <Header />
               <ModalContainer />
               {children}
+              <div className="fixed right-4 top-[13px] lg:top-[15px] z-50">
+                <FinishedButtonInHeader />
+              </div>
             </AnimationProvider>
           </ModalProvider>
         </TodoProvider>

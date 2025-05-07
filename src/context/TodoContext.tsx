@@ -66,17 +66,15 @@ const useQuadrants = (todos: Todo[]): QuadrantState => {
       notUrgentImportant: [],
       urgentNotImportant: [],
       notUrgentNotImportant: [],
-      finished: [],
+      finished: [], // not used, but kept for type compatibility
     };
 
-    return todos.reduce((acc, todo) => {
-      if (todo.completed) {
-        acc.finished.push(todo);
-      } else {
-        acc[todo.quadrant].push(todo);
+    todos.forEach((todo) => {
+      if (!todo.completed) {
+        initialQuadrants[todo.quadrant].push(todo);
       }
-      return acc;
-    }, initialQuadrants);
+    });
+    return initialQuadrants;
   }, [todos]);
 };
 
@@ -101,20 +99,21 @@ const useQuadrants = (todos: Todo[]): QuadrantState => {
  * 4. Local storage is updated automatically
  */
 export function TodoProvider({ children }: { children: React.ReactNode }) {
-  // Main state for all todos
+  // Main state for all todos (active and completed)
   const [todos, setTodos] = useState<Todo[]>([]);
-  const [finished, setFinished] = useState<Todo[]>([]);
   const quadrants = useQuadrants(todos);
 
   useEffect(() => {
     const savedTodos = localStorage.getItem("todos");
-    const savedFinished = localStorage.getItem("finished");
-
     if (savedTodos) {
-      setTodos(JSON.parse(savedTodos));
-    }
-    if (savedFinished) {
-      setFinished(JSON.parse(savedFinished));
+      // Parse and revive date fields
+      setTodos(
+        JSON.parse(savedTodos).map((todo: any) => ({
+          ...todo,
+          createdAt: new Date(todo.createdAt),
+          dueDate: todo.dueDate ? new Date(todo.dueDate) : undefined,
+        }))
+      );
     }
   }, []);
 
@@ -122,18 +121,8 @@ export function TodoProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem("todos", JSON.stringify(todos));
   }, [todos]);
 
-  useEffect(() => {
-    localStorage.setItem("finished", JSON.stringify(finished));
-  }, [finished]);
-
   /**
    * Adds a new todo to the inbox quadrant
-   * 
-   * Flow:
-   * 1. Validates input (prevents empty todos)
-   * 2. Creates new todo with unique ID and timestamp
-   * 3. Adds to the todos array
-   * 4. Automatically persists to localStorage
    */
   const addTodo = useCallback((text: string) => {
     if (!text.trim()) return; // Prevent empty todos
@@ -149,40 +138,18 @@ export function TodoProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   /**
-   * Marks a todo as finished and moves it to the finished list
-   * 
-   * Flow:
-   * 1. Creates a copy of the todo with completed status
-   * 2. Preserves the original quadrant information
-   * 3. Removes the original todo
-   * 4. Adds the completed copy to the state
-   * 5. Triggers re-render and storage update
+   * Marks a todo as completed (finished)
    */
   const deleteTodo = useCallback((id: string) => {
-    setTodos((prev) => {
-      const todoToFinish = prev.find((todo) => todo.id === id);
-      if (!todoToFinish) return prev;
-
-      console.log("Marking as finished:", {
-        id: todoToFinish.id,
-        currentQuadrant: todoToFinish.quadrant,
-      });
-
-      // Create an exact copy for the finished list
-      const finishedCopy = {
-        ...todoToFinish,
-        completed: true,
-        quadrant: todoToFinish.quadrant, // Preserve the quadrant
-      };
-
-      // Remove the original todo and add the finished copy
-      return [...prev.filter((todo) => todo.id !== id), finishedCopy];
-    });
+    setTodos((prev) =>
+      prev.map((todo) =>
+        todo.id === id ? { ...todo, completed: true } : todo
+      )
+    );
   }, []);
 
   /**
    * Permanently removes a todo from the list
-   * @param id - The ID of the todo to permanently delete
    */
   const permanentlyDeleteTodo = useCallback((id: string) => {
     setTodos((prev) => prev.filter((todo) => todo.id !== id));
@@ -190,75 +157,23 @@ export function TodoProvider({ children }: { children: React.ReactNode }) {
 
   /**
    * Restores a finished todo back to active status
-   * 
-   * Flow:
-   * 1. Finds the finished todo
-   * 2. Creates a copy with active status
-   * 3. Preserves the original quadrant
-   * 4. Removes from finished list
-   * 5. Adds back to active todos
-   * 6. Triggers re-render and storage update
    */
   const restoreTodo = useCallback((id: string) => {
-    setTodos((prev) => {
-      const todoToRestore = prev.find((todo) => todo.id === id);
-      if (!todoToRestore) return prev;
-
-      console.log("Restoring todo:", {
-        id: todoToRestore.id,
-        currentQuadrant: todoToRestore.quadrant,
-      });
-
-      // Create an exact copy for the original quadrant
-      const restoredTodo = {
-        ...todoToRestore,
-        completed: false,
-        quadrant: todoToRestore.quadrant, // Keep the same quadrant
-      };
-
-      // Remove the finished todo and add the restored one
-      return prev.filter((todo) => todo.id !== id).concat(restoredTodo);
-    });
+    setTodos((prev) =>
+      prev.map((todo) =>
+        todo.id === id ? { ...todo, completed: false } : todo
+      )
+    );
   }, []);
 
   /**
    * Toggles a todo's completion status
-   * 
-   * Flow:
-   * 1. When marking complete:
-   *    - Preserves current quadrant
-   *    - Sets completed flag
-   *    - Moves to finished list
-   * 2. When marking incomplete:
-   *    - Restores to original quadrant
-   *    - Clears completed flag
-   *    - Returns to active todos
    */
   const toggleTodo = useCallback((id: string) => {
     setTodos((prev) =>
-      prev.map((todo) => {
-        if (todo.id === id) {
-          // If marking as complete, store current quadrant and mark as completed
-          if (!todo.completed) {
-            console.log("Marking as complete:", {
-              id: todo.id,
-              currentQuadrant: todo.quadrant,
-            });
-            return {
-              ...todo,
-              completed: true,
-              quadrant: todo.quadrant, // Keep the current quadrant
-            };
-          }
-          // If marking as incomplete, restore to previous quadrant
-          return {
-            ...todo,
-            completed: false,
-            quadrant: todo.quadrant, // Keep the current quadrant
-          };
-        }
-        return todo;
-      })
+      prev.map((todo) =>
+        todo.id === id ? { ...todo, completed: !todo.completed } : todo
+      )
     );
   }, []);
 
@@ -382,7 +297,7 @@ export function TodoProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo(
     () => ({
       quadrants,
-      finished: quadrants.finished,
+      finished: todos.filter((t) => t.completed),
       addTodo,
       deleteTodo,
       permanentlyDeleteTodo,
@@ -398,6 +313,7 @@ export function TodoProvider({ children }: { children: React.ReactNode }) {
     }),
     [
       quadrants,
+      todos,
       addTodo,
       deleteTodo,
       permanentlyDeleteTodo,

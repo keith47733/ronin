@@ -38,12 +38,17 @@ import { Modal } from "./Modal";
 import TodoItem from "./TodoItem";
 import { Todo } from "@/types/todo";
 import { useDragAndDrop } from "@/hooks/useDragAndDrop";
+import { DndListView } from "./DndListView";
+import { QUADRANT_CONFIGS } from "@/constants/quadrants";
 
 interface FinishedModalProps {
   isOpen: boolean; // Controls modal visibility
   onClose: () => void; // Callback when modal is closed
   finished: Todo[]; // List of completed tasks
 }
+
+// Use the finished config for modal colors
+const finishedConfig = QUADRANT_CONFIGS.finished;
 
 export default function FinishedModal({
   isOpen,
@@ -72,41 +77,67 @@ export default function FinishedModal({
     }
   };
 
+  // Center modal horizontally on mobile, keep right-aligned on desktop
+  const isDesktop = typeof window !== "undefined" ? window.innerWidth >= 1024 : true;
+
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Finished Tasks"
-      className="w-[90%] lg:w-1/3 rounded-lg"
-      style={{
-        position: "fixed",
-        top: "6rem",
-        right: "2rem",
-        transform: "none",
-        zIndex: 51, // Ensure modal is above animated items
-      }}
+      title={finishedConfig.title}
+      subtitle={finishedConfig.subtitle}
+      className={`w-[90%] lg:w-1/3 rounded-lg ${finishedConfig.bgColor}`}
+      headerClassName={`${finishedConfig.headerBgColor} border-b border-gray-200 rounded-t-lg`}
+      backgroundClassName={finishedConfig.bgColor}
+      style={
+        isDesktop
+          ? {
+              position: "fixed",
+              top: "6rem",
+              right: "2rem",
+              transform: "none",
+              zIndex: 1001,
+            }
+          : {
+              position: "fixed",
+              top: "6rem",
+              left: "50%",
+              right: "auto",
+              transform: "translateX(-50%)",
+              zIndex: 1001,
+            }
+      }
     >
-      <div
-        className="p-4 overflow-y-auto max-h-[calc(100vh-8rem)]"
-        onDragOver={handleDragOver}
-        onDrop={handleDrop}
-      >
-        <div className="flex flex-col items-center gap-2">
-          {finished.length === 0 ? (
-            <div className="text-gray-500 text-sm font-karla self-start">
+      <div>
+        <div className={`${finishedConfig.bgColor} rounded-b-lg relative overflow-y-auto`} style={{minHeight: 80}}>
+          <DndListView
+            items={finished}
+            onReorder={() => {}}
+            renderItem={(todo) => (
+              <div className="w-full scroll-mt-1 scroll-mb-1">
+                <TodoItem
+                  key={todo.id}
+                  todo={todo}
+                  quadrant="finished"
+                  onDragStart={() => () => {}}
+                  onDragEnd={() => {}}
+                  onRestore={handleRestore}
+                  onDrop={() => {}}
+                  onDragOver={() => {}}
+                  onDragLeave={() => {}}
+                  onDelete={() => {}}
+                  onUpdateText={() => {}}
+                />
+              </div>
+            )}
+            listClassName="gap-1 max-h-[calc(50vh-50px)] lg:max-h-[calc(100vh-12rem-50px)] scrollbar-none"
+            gradientColor={finishedConfig.gradientColor}
+            quadrantId="finished"
+          />
+          {finished.length === 0 && (
+            <div className="text-gray-500 text-sm font-karla self-start mt-2 mb-4 px-4">
               No finished tasks yet...
             </div>
-          ) : (
-            finished.map((todo) => (
-              <TodoItem
-                key={todo.id}
-                todo={todo}
-                quadrant="finished"
-                onDragStart={handleDragStart}
-                onDragEnd={handleDragEnd}
-                onRestore={handleRestore}
-              />
-            ))
           )}
         </div>
       </div>

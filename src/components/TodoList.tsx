@@ -112,9 +112,7 @@ export function TodoList() {
             todos={quadrants.inbox}
             onDrop={(data) => moveTodo(data.todo, data.fromQuadrant, "inbox")}
             quadrant="inbox"
-            title={inboxConfig.title}
-            subtitle={inboxConfig.subtitle}
-            bgColor="bg-yellow-50"
+            config={inboxConfig}
           />
         </SortableContext>
       </div>
