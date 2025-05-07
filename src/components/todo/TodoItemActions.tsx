@@ -8,6 +8,7 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/Tooltip";
 import { format } from "date-fns";
 import { Todo, QuadrantKey } from "@/types/todo";
+import { QUADRANT_CONFIGS } from "@/constants/quadrants";
 
 interface TodoItemActionsProps {
   todo: Todo;
@@ -42,6 +43,11 @@ const iconStyles = {
   },
 };
 
+// Helper to get quadrant config
+function getQuadrantConfig(quadrant: QuadrantKey) {
+  return QUADRANT_CONFIGS[quadrant] || QUADRANT_CONFIGS.inbox;
+}
+
 export function TodoItemActions({
   todo,
   quadrant,
@@ -51,11 +57,12 @@ export function TodoItemActions({
   onWaitingClick,
   onDeleteClick,
 }: TodoItemActionsProps) {
+  const config = getQuadrantConfig(quadrant);
   return (
-    <div className={`flex items-center gap-0.5 flex-shrink-0 ${isDragging ? "pointer-events-none" : ""}`} draggable={false}>
+    <div className={`flex items-center gap-1 flex-shrink-0 ${isDragging ? "pointer-events-none" : ""}`} draggable={false}>
       {quadrant === "finished" ? (
         <>
-          <div className={`${iconStyles.base} ${todo.dueDate ? "text-blue-400" : "text-gray-400"}`} draggable={false}>
+          <div className={`${iconStyles.base} ${todo.dueDate ? config.chevronColor.split(" ")[0] : "text-gray-400"}`} draggable={false}>
             <CalendarIcon size={14} />
           </div>
           <div className={`${iconStyles.base} ${todo.note ? "text-purple-400" : "text-gray-400"}`} draggable={false}>
@@ -66,8 +73,9 @@ export function TodoItemActions({
           </div>
           <button
             onClick={onDeleteClick}
-            className={`${iconStyles.base} ${iconStyles.active.delete} hover:scale-120`}
+            className={`${iconStyles.base} ${iconStyles.active.delete} hover:scale-110`}
             draggable={false}
+            aria-label="Delete finished todo"
           >
             <TrashIcon className="w-3.5 h-3.5" />
           </button>
@@ -80,11 +88,10 @@ export function TodoItemActions({
                 <TooltipTrigger asChild>
                   <button
                     onClick={onDueDateClick}
-                    className={`${iconStyles.base} ${
-                      todo.dueDate ? iconStyles.active.calendar : iconStyles.inactive
-                    } ${todo.dueDate ? iconStyles.glow.calendar : ""}`}
+                    className={`${iconStyles.base} ${config.chevronColor.split(" ")[0]} bg-white/80 hover:bg-white/90 border ${todo.dueDate ? config.chevronColor.split(" ")[0] : "border-gray-300"} hover:border-blue-300`}
                     disabled={todo.completed}
                     draggable={false}
+                    aria-label="Due date"
                   >
                     <CalendarIcon size={14} />
                   </button>
@@ -97,11 +104,10 @@ export function TodoItemActions({
           ) : (
             <button
               onClick={onDueDateClick}
-              className={`${iconStyles.base} ${
-                todo.dueDate ? iconStyles.active.calendar : iconStyles.inactiveWithScale
-              } ${todo.dueDate ? iconStyles.glow.calendar : ""}`}
+              className={`${iconStyles.base} ${config.chevronColor.split(" ")[0]} bg-white/80 hover:bg-white/90 border border-gray-300`}
               disabled={todo.completed}
               draggable={false}
+              aria-label="Due date"
             >
               <CalendarIcon size={14} />
             </button>
@@ -113,11 +119,10 @@ export function TodoItemActions({
                 <TooltipTrigger asChild>
                   <button
                     onClick={onNoteClick}
-                    className={`${iconStyles.base} ${
-                      todo.note ? iconStyles.active.note : iconStyles.inactive
-                    } ${todo.note ? iconStyles.glow.note : ""}`}
+                    className={`${iconStyles.base} text-purple-500 bg-white/80 hover:bg-white/90 border border-purple-300`}
                     disabled={todo.completed}
                     draggable={false}
+                    aria-label="Note"
                   >
                     <MessageSquareIcon size={14} />
                   </button>
@@ -130,11 +135,10 @@ export function TodoItemActions({
           ) : (
             <button
               onClick={onNoteClick}
-              className={`${iconStyles.base} ${
-                todo.note ? iconStyles.active.note : iconStyles.inactiveWithScale
-              } ${todo.note ? iconStyles.glow.note : ""}`}
+              className={`${iconStyles.base} text-purple-500 bg-white/80 hover:bg-white/90 border border-purple-300`}
               disabled={todo.completed}
               draggable={false}
+              aria-label="Note"
             >
               <MessageSquareIcon size={14} />
             </button>
@@ -146,11 +150,10 @@ export function TodoItemActions({
                 <TooltipTrigger asChild>
                   <button
                     onClick={onWaitingClick}
-                    className={`${iconStyles.base} ${
-                      todo.isWaiting ? iconStyles.active.waiting : iconStyles.inactive
-                    } ${todo.isWaiting ? iconStyles.glow.waiting : ""}`}
+                    className={`${iconStyles.base} text-orange-500 bg-white/80 hover:bg-white/90 border border-orange-300`}
                     disabled={todo.completed}
                     draggable={false}
+                    aria-label="Waiting"
                   >
                     <HourglassIcon size={14} />
                   </button>
@@ -163,11 +166,10 @@ export function TodoItemActions({
           ) : (
             <button
               onClick={onWaitingClick}
-              className={`${iconStyles.base} ${
-                todo.isWaiting ? iconStyles.active.waiting : iconStyles.inactiveWithScale
-              } ${todo.isWaiting ? iconStyles.glow.waiting : ""}`}
+              className={`${iconStyles.base} text-orange-500 bg-white/80 hover:bg-white/90 border border-orange-300`}
               disabled={todo.completed}
               draggable={false}
+              aria-label="Waiting"
             >
               <HourglassIcon size={14} />
             </button>
@@ -175,8 +177,9 @@ export function TodoItemActions({
 
           <button
             onClick={onDeleteClick}
-            className={`${iconStyles.base} ${iconStyles.active.delete} hover:scale-120`}
+            className={`${iconStyles.base} ${iconStyles.active.delete} hover:scale-110`}
             draggable={false}
+            aria-label="Delete todo"
           >
             <TrashIcon className="w-3.5 h-3.5" />
           </button>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import { Todo, QuadrantKey, QuadrantConfig } from "@/types/todo";
 import { DndListView } from "@/components/DndListView";
 import TodoItem from "@/components/TodoItem";

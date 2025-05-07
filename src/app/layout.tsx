@@ -32,8 +32,8 @@ export default function RootLayout({ children }: RootLayoutProps) {
         <link rel="icon" href="/favicon.ico" sizes="any" />
       </head>
       <body>
-        <TodoProvider>
-          <ModalProvider>
+        <ModalProvider>
+          <TodoProvider>
             <AnimationProvider>
               <Header />
               <ModalContainer />
@@ -42,8 +42,8 @@ export default function RootLayout({ children }: RootLayoutProps) {
                 <FinishedButtonInHeader />
               </div>
             </AnimationProvider>
-          </ModalProvider>
-        </TodoProvider>
+          </TodoProvider>
+        </ModalProvider>
       </body>
     </html>
   );

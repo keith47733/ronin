@@ -9,6 +9,7 @@ import React, {
   useEffect,
 } from "react";
 import { Todo, QuadrantKey } from "@/types/todo";
+import { useModal } from "@/context/ModalContext";
 
 /**
  * Core state management for the Todo application
@@ -78,6 +79,38 @@ const useQuadrants = (todos: Todo[]): QuadrantState => {
   }, [todos]);
 };
 
+// Helper functions for date serialization/deserialization
+function serializeTodos(todos: Todo[]): any[] {
+  return todos.map((todo) => ({
+    ...todo,
+    createdAt: todo.createdAt instanceof Date ? todo.createdAt.toISOString() : todo.createdAt,
+    dueDate: todo.dueDate instanceof Date ? todo.dueDate.toISOString() : todo.dueDate || undefined,
+  }));
+}
+
+function deserializeTodos(raw: any[]): Todo[] {
+  let corruptedCount = 0;
+  const validTodos = [];
+  for (const todo of raw) {
+    try {
+      const deserialized = {
+        ...todo,
+        createdAt: todo.createdAt ? new Date(todo.createdAt) : new Date(),
+        dueDate: todo.dueDate ? new Date(todo.dueDate) : undefined,
+      };
+      // Basic validation: must have id and text
+      if (deserialized.id && deserialized.text) {
+        validTodos.push(deserialized);
+      } else {
+        corruptedCount++;
+      }
+    } catch {
+      corruptedCount++;
+    }
+  }
+  return validTodos;
+}
+
 /**
  * TodoProvider: The central state management component
  * 
@@ -102,23 +135,57 @@ export function TodoProvider({ children }: { children: React.ReactNode }) {
   // Main state for all todos (active and completed)
   const [todos, setTodos] = useState<Todo[]>([]);
   const quadrants = useQuadrants(todos);
+  const { openModal } = useModal();
 
   useEffect(() => {
     const savedTodos = localStorage.getItem("todos");
     if (savedTodos) {
-      // Parse and revive date fields
-      setTodos(
-        JSON.parse(savedTodos).map((todo: any) => ({
-          ...todo,
-          createdAt: new Date(todo.createdAt),
-          dueDate: todo.dueDate ? new Date(todo.dueDate) : undefined,
-        }))
-      );
+      try {
+        const raw = JSON.parse(savedTodos);
+        let corruptedCount = 0;
+        const validTodos = [];
+        for (const todo of raw) {
+          try {
+            const deserialized = {
+              ...todo,
+              createdAt: todo.createdAt ? new Date(todo.createdAt) : new Date(),
+              dueDate: todo.dueDate ? new Date(todo.dueDate) : undefined,
+            };
+            // Basic validation: must have id and text
+            if (deserialized.id && deserialized.text) {
+              validTodos.push(deserialized);
+            } else {
+              corruptedCount++;
+            }
+          } catch {
+            corruptedCount++;
+          }
+        }
+        setTodos(validTodos);
+        if (corruptedCount > 0) {
+          setTimeout(() => {
+            openModal("error", {
+              message: `Some data was corrupted.`,
+              corruptedCount,
+              allCorrupt: validTodos.length === 0,
+            });
+          }, 0);
+        }
+      } catch (err) {
+        setTodos([]); // fallback to empty list
+        setTimeout(() => {
+          openModal("error", {
+            message: "Could not load your tasks due to corrupted data.",
+            corruptedCount: 0,
+            allCorrupt: true,
+          });
+        }, 0);
+      }
     }
-  }, []);
+  }, [openModal]);
 
   useEffect(() => {
-    localStorage.setItem("todos", JSON.stringify(todos));
+    localStorage.setItem("todos", JSON.stringify(serializeTodos(todos)));
   }, [todos]);
 
   /**

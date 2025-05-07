@@ -2,9 +2,9 @@
 
 import React, { useState } from "react";
 import { useTodo } from "@/context/TodoContext";
-import { Quadrant } from "./Quadrant";
 import { QUADRANT_CONFIGS } from "@/constants/quadrants";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { Quadrant } from "./Quadrant";
 
 /**
  * TodoList Component

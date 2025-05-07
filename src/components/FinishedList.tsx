@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Todo } from "@/types/todo";
+import { Todo, QuadrantKey } from "@/types/todo";
 import {
   RotateCcw,
   Trash2,
@@ -11,6 +11,7 @@ import {
   Clock,
 } from "lucide-react";
 import { useTodo } from "@/context/TodoContext";
+import { QUADRANT_CONFIGS } from "@/constants/quadrants";
 
 interface FinishedListProps {
   tasks: Todo[];
@@ -18,8 +19,14 @@ interface FinishedListProps {
   onClose: () => void;
 }
 
+// Helper to get quadrant config
+function getQuadrantConfig(quadrant: QuadrantKey) {
+  return QUADRANT_CONFIGS[quadrant] || QUADRANT_CONFIGS.inbox;
+}
+
 export function FinishedList({ tasks, onRestore, onClose }: FinishedListProps) {
   const { permanentlyDeleteTodo } = useTodo();
+  const finishedConfig = getQuadrantConfig('finished');
 
   return (
     <div className="absolute right-0 top-16 w-96 bg-white shadow-lg rounded-md overflow-hidden z-50">
@@ -40,12 +47,12 @@ export function FinishedList({ tasks, onRestore, onClose }: FinishedListProps) {
             {tasks.map((task) => (
               <div
                 key={task.id}
-                className="bg-gray-50 rounded p-3 flex items-center justify-between"
+                className={`bg-gray-50 rounded p-3 flex items-center justify-between`}
               >
                 <div className="flex items-center space-x-2 flex-1">
                   <button
                     onClick={() => onRestore(task.id)}
-                    className="text-blue-500 hover:text-blue-600 p-1"
+                    className={`text-blue-500 hover:text-blue-600 p-1`}
                     title="Restore task"
                   >
                     <RotateCcw className="h-5 w-5" />
@@ -57,40 +64,24 @@ export function FinishedList({ tasks, onRestore, onClose }: FinishedListProps) {
                 <div className="flex items-center gap-1">
                   {/* Due Date Icon */}
                   <div
-                    className={`p-1 ${
-                      task.dueDate
-                        ? "text-primary-400 drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]"
-                        : "text-gray-300"
-                    }`}
-                    title={
-                      task.dueDate
-                        ? new Date(task.dueDate).toLocaleDateString()
-                        : "No due date"
-                    }
+                    className={`p-1 ${task.dueDate ? finishedConfig.chevronColor.split(' ')[0] + ' drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]' : 'text-gray-300'}`}
+                    title={task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'No due date'}
                   >
                     <Calendar className="h-5 w-5" />
                   </div>
 
                   {/* Note Icon */}
                   <div
-                    className={`p-1 ${
-                      task.note
-                        ? "text-purple-400 drop-shadow-[0_0_8px_rgba(168,85,247,0.5)]"
-                        : "text-gray-300"
-                    }`}
-                    title={task.note || "No note"}
+                    className={`p-1 ${task.note ? 'text-purple-400 drop-shadow-[0_0_8px_rgba(168,85,247,0.5)]' : 'text-gray-300'}`}
+                    title={task.note || 'No note'}
                   >
                     <MessageSquare className="h-5 w-5" />
                   </div>
 
                   {/* Waiting Icon */}
                   <div
-                    className={`p-1 ${
-                      task.isWaiting
-                        ? "text-orange-400 drop-shadow-[0_0_8px_rgba(249,115,22,0.5)]"
-                        : "text-gray-300"
-                    }`}
-                    title={task.isWaiting ? "Was waiting" : "Not waiting"}
+                    className={`p-1 ${task.isWaiting ? 'text-orange-400 drop-shadow-[0_0_8px_rgba(249,115,22,0.5)]' : 'text-gray-300'}`}
+                    title={task.isWaiting ? 'Was waiting' : 'Not waiting'}
                   >
                     <Clock className="h-5 w-5" />
                   </div>

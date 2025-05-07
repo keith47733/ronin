@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useState, useCallback, useMemo, useEffect } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { Todo, QuadrantKey } from "@/types/todo";
 import { useTodo } from "@/context/TodoContext";
 import { useModal } from "@/context/ModalContext";
@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/Tooltip";
 import { format } from "date-fns";
-import styles from "./TodoItem.module.css";
+import { QUADRANT_CONFIGS } from "@/constants/quadrants";
 
 /**
  * TodoItem Component
@@ -99,6 +99,15 @@ const iconStyles = {
 };
 
 /**
+ * Helper to get quadrant config
+ * @param {QuadrantKey} quadrant - The quadrant to get config for
+ * @returns {Object} - The quadrant configuration object
+ */
+function getQuadrantConfig(quadrant: QuadrantKey) {
+  return QUADRANT_CONFIGS[quadrant] || QUADRANT_CONFIGS.inbox;
+}
+
+/**
  * TodoItem Component
  *
  * This component represents a single todo item in the application. It provides a rich set of features
@@ -159,23 +168,22 @@ export default function TodoItem({
   const itemRef = useRef<HTMLDivElement>(null);                   // DOM reference
   const { finishedButtonRef } = useAnimation();                   // Animation context reference
 
+  const config = getQuadrantConfig(quadrant);
+
   /**
    * Intersection Observer setup for fade-in animation
    * Observes when the todo item enters the viewport and triggers fade-in
    */
-  const observerCallback = useCallback((entries: IntersectionObserverEntry[]) => {
+  const observerCallback = (entries: IntersectionObserverEntry[]) => {
     entries.forEach((entry) => {
       if (entry.isIntersecting) {
         setOpacity(1);
       }
     });
-  }, []);
+  };
 
   // Memoize the threshold array for smooth fade-in
-  const observerThreshold = useMemo(
-    () => Array.from({ length: 100 }, (_, i) => i / 100),
-    []
-  );
+  const observerThreshold = Array.from({ length: 100 }, (_, i) => i / 100);
 
   /**
    * Set up intersection observer for fade-in animation
@@ -192,36 +200,36 @@ export default function TodoItem({
     }
 
     return () => observer.disconnect();
-  }, [observerCallback, observerThreshold]);
+  }, []);
 
   /**
    * Text editing handlers
    * Manage the todo item's text editing state and updates
    */
-  const handleTextClick = useCallback(() => {
+  const handleTextClick = () => {
     if (todo.completed) return;
     setIsEditing(true);
-  }, [todo.completed]);
+  };
 
-  const handleTextChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setEditedText(e.target.value);
-  }, []);
+  };
 
-  const handleTextBlur = useCallback(() => {
+  const handleTextBlur = () => {
     if (editedText.trim()) {
       updateTodoText(todo.id, editedText.trim());
     }
     setIsEditing(false);
-  }, [editedText, todo.id, updateTodoText]);
+  };
 
-  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       handleTextBlur();
     } else if (e.key === "Escape") {
       setEditedText(todo.text);
       setIsEditing(false);
     }
-  }, [handleTextBlur, todo.text]);
+  };
 
   /**
    * Due date modal handler
