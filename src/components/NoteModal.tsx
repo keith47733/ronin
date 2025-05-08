@@ -74,7 +74,7 @@ export default function NoteModal({
     >
       <div className="p-2 pb-0 bg-white">
         <textarea
-          value={note}
+          value={note ?? ""}
           onChange={(e) => setNote(e.target.value)}
           className="w-full h-[120px] max-h-[120px] p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
           placeholder="Add a note..."

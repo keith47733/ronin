@@ -41,9 +41,15 @@ interface TodoContextType {
   ) => void;
   reorderTodo: (todoId: string, toQuadrant: QuadrantKey, toIndex: number) => void;
   reorderTodosInQuadrant: (quadrant: QuadrantKey, newOrder: Todo[]) => void;
+  pendingMove: { todoId: string, toQuadrant: QuadrantKey } | null;
+  setPendingMove: (move: { todoId: string, toQuadrant: QuadrantKey } | null) => void;
+  setTodos: React.Dispatch<React.SetStateAction<Todo[]>>;
 }
 
 // Create a type for the quadrant state
+// Each quadrant key maps to an array of todos
+// This makes it easy to render and manage todos by quadrant
+//
 type QuadrantState = Record<QuadrantKey, Todo[]>;
 
 // Create the context with undefined as default value
@@ -111,6 +117,17 @@ function deserializeTodos(raw: any[]): Todo[] {
   return validTodos;
 }
 
+// Utility functions for robust, consistent reordering
+function removeAndReorder(list: Todo[], id: string): Todo[] {
+  return list.filter(t => t.id !== id).map((t, idx) => ({ ...t, order: idx }));
+}
+
+function addAndReorder(list: Todo[], todo: Todo): Todo[] {
+  // Remove any existing instance of the todo before appending
+  const filtered = list.filter(t => t.id !== todo.id);
+  return [...filtered, todo].map((t, idx) => ({ ...t, order: idx }));
+}
+
 /**
  * TodoProvider: The central state management component
  * 
@@ -131,270 +148,294 @@ function deserializeTodos(raw: any[]): Todo[] {
  * 3. State changes trigger re-renders
  * 4. Local storage is updated automatically
  */
-export function TodoProvider({ children }: { children: React.ReactNode }) {
-  // Main state for all todos (active and completed)
-  const [todos, setTodos] = useState<Todo[]>([]);
+export function TodoProvider({ children, initialTodos = [] }: { children: React.ReactNode, initialTodos?: Todo[] }) {
+  const [todos, setTodos] = useState<Todo[]>(initialTodos);
   const quadrants = useQuadrants(todos);
   const { openModal } = useModal();
 
-  useEffect(() => {
-    const savedTodos = localStorage.getItem("todos");
-    if (savedTodos) {
-      try {
-        const raw = JSON.parse(savedTodos);
-        let corruptedCount = 0;
-        const validTodos = [];
-        for (const todo of raw) {
-          try {
-            const deserialized = {
-              ...todo,
-              createdAt: todo.createdAt ? new Date(todo.createdAt) : new Date(),
-              dueDate: todo.dueDate ? new Date(todo.dueDate) : undefined,
-            };
-            // Basic validation: must have id and text
-            if (deserialized.id && deserialized.text) {
-              validTodos.push(deserialized);
-            } else {
-              corruptedCount++;
-            }
-          } catch {
-            corruptedCount++;
-          }
-        }
-        setTodos(validTodos);
-        if (corruptedCount > 0) {
-          setTimeout(() => {
-            openModal("error", {
-              message: `Some data was corrupted.`,
-              corruptedCount,
-              allCorrupt: validTodos.length === 0,
-            });
-          }, 0);
-        }
-      } catch (err) {
-        setTodos([]); // fallback to empty list
-        setTimeout(() => {
-          openModal("error", {
-            message: "Could not load your tasks due to corrupted data.",
-            corruptedCount: 0,
-            allCorrupt: true,
-          });
-        }, 0);
-      }
-    }
-  }, [openModal]);
+  // Track a pending move for robust cross-quadrant and finished/quadrant ordering
+  // Used for drag-and-drop, finishing, and restoring
+  const [pendingMove, setPendingMove] = useState<{ todoId: string, toQuadrant: QuadrantKey } | null>(null);
 
-  useEffect(() => {
-    localStorage.setItem("todos", JSON.stringify(serializeTodos(todos)));
+  // Add todo via API
+  /**
+   * Adds a new todo and ensures it is appended to the end of its quadrant.
+   * - After adding, reorders the quadrant to ensure the new todo is last and order fields are correct.
+   * - Scrolls the inbox listview to show the new item (handled in the component).
+   */
+  const addTodo = useCallback(async (text: string) => {
+    if (!text.trim()) return;
+    const res = await fetch('/api/todos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text }),
+    });
+    const newTodo = await res.json();
+    setTodos(prev => {
+      // Remove any accidental duplicate (shouldn't happen, but for safety)
+      const filtered = prev.filter(t => t.id !== newTodo.id);
+      // Find all todos in the new todo's quadrant
+      const quadrantTodos = filtered.filter(t => t.quadrant === newTodo.quadrant && !t.completed);
+      const others = filtered.filter(t => t.quadrant !== newTodo.quadrant || t.completed);
+      const newQuadrant = addAndReorder(quadrantTodos, newTodo);
+      const updates = newQuadrant.map((t, idx) => ({ id: t.id, order: idx }));
+      fetch('/api/todos', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ updates }),
+      });
+      return [...others, ...newQuadrant];
+    });
+    setPendingMove({ todoId: newTodo.id, toQuadrant: 'inbox' });
+  }, []);
+
+  // Update todo via API
+  const updateTodo = useCallback(async (updated: Todo) => {
+    const res = await fetch('/api/todos', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updated),
+    });
+    const todo = await res.json();
+    setTodos(prev => prev.map(t => t.id === todo.id ? todo : t));
+  }, []);
+
+  // Delete todo via API
+  const deleteTodo = useCallback(async (id: string) => {
+    await fetch('/api/todos', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    });
+    setTodos(prev => prev.filter(t => t.id !== id));
+  }, []);
+
+  // Mark as completed (finished)
+  /**
+   * Marks a todo as completed (finished).
+   * - Removes from all lists, then inserts as the first item in the finished list, reorders and persists.
+   * - Existing finished tasks are bumped down.
+   * - Scrolls finished listview to show new item (handled in FinishedModal).
+   */
+  const markCompleted = useCallback(async (id: string) => {
+    setTodos(prev => {
+      const todo = prev.find(t => t.id === id);
+      if (!todo) return prev;
+      // Remove from all lists
+      const filtered = prev.filter(t => t.id !== id);
+      // Get all finished tasks and bump their order by 1
+      const finished = filtered.filter(t => t.completed).map(t => ({ ...t, order: t.order + 1 }));
+      const others = filtered.filter(t => !t.completed);
+      // Set the new finished task's order to 0
+      const newFinishedTask = { ...todo, completed: true, order: 0 };
+      // Prepend the new finished task (no sort)
+      const newFinished = [newFinishedTask, ...finished];
+      // Assign correct order values in state
+      const newFinishedWithOrder = newFinished.map((t, idx) => ({ ...t, order: idx }));
+      // Persist new order for finished list
+      fetch('/api/todos', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ updates: newFinishedWithOrder.map((t, idx) => ({ id: t.id, order: idx })) }),
+      });
+      return [...others, ...newFinishedWithOrder];
+    });
+    setPendingMove({ todoId: id, toQuadrant: 'finished' });
+  }, [setTodos, setPendingMove]);
+
+  // Restore a finished todo
+  /**
+   * Restores a finished todo to its quadrant.
+   * - Removes from all lists, then adds to end of destination quadrant, reorders and persists.
+   * - Scrolls destination listview to show new item (handled in Quadrant).
+   */
+  const restoreTodo = useCallback(async (id: string) => {
+    const todo = todos.find(t => t.id === id);
+    if (todo) {
+      await updateTodo({ ...todo, completed: false });
+      setTodos(prev => {
+        // Remove the todo from all lists (to prevent duplicates)
+        const filtered = prev.filter(t => t.id !== id);
+        // Add to end of destination quadrant and reorder
+        const quadrantTodos = filtered.filter(t => t.quadrant === todo.quadrant && !t.completed);
+        const others = filtered.filter(t => t.quadrant !== todo.quadrant || t.completed);
+        const newQuadrant = addAndReorder(quadrantTodos, { ...todo, completed: false });
+        // Persist destination list
+        fetch('/api/todos', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ updates: newQuadrant.map((t, idx) => ({ id: t.id, order: idx })) }),
+        });
+        return [...others, ...newQuadrant];
+      });
+      setPendingMove({ todoId: todo.id, toQuadrant: todo.quadrant });
+    }
+  }, [todos, updateTodo]);
+
+  // Toggle completion
+  const toggleTodo = useCallback(async (id: string) => {
+    const todo = todos.find(t => t.id === id);
+    if (todo) {
+      await updateTodo({ ...todo, completed: !todo.completed });
+    }
+  }, [todos, updateTodo]);
+
+  // Toggle waiting
+  const toggleWaiting = useCallback(async (id: string) => {
+    const todo = todos.find(t => t.id === id);
+    if (todo) {
+      await updateTodo({ ...todo, isWaiting: !todo.isWaiting });
+    }
+  }, [todos, updateTodo]);
+
+  // Update text
+  const updateTodoText = useCallback(async (id: string, text: string) => {
+    if (!text.trim()) return;
+    const todo = todos.find(t => t.id === id);
+    if (todo) {
+      await updateTodo({ ...todo, text });
+    }
+  }, [todos, updateTodo]);
+
+  // Update due date
+  const updateTodoDueDate = useCallback(async (id: string, date: Date | undefined) => {
+    const todo = todos.find(t => t.id === id);
+    if (todo) {
+      await updateTodo({ ...todo, dueDate: date });
+    }
+  }, [todos, updateTodo]);
+
+  // Update note
+  const updateTodoNote = useCallback(async (id: string, note: string) => {
+    const todo = todos.find(t => t.id === id);
+    if (todo) {
+      await updateTodo({ ...todo, note });
+    }
+  }, [todos, updateTodo]);
+
+  // Move todo between quadrants
+  /**
+   * Moves a todo to a different quadrant (drag-and-drop or programmatic move).
+   * - Removes from all lists, then adds to end of destination quadrant, reorders and persists.
+   * - Scrolls destination listview to show new item (handled in Quadrant).
+   */
+  const moveTodo = useCallback(async (todo: Todo, fromQuadrant: QuadrantKey, toQuadrant: QuadrantKey) => {
+    if (todo.quadrant !== toQuadrant) {
+      await updateTodo({ ...todo, quadrant: toQuadrant });
+      setTodos(prev => {
+        // Remove the todo from all lists (to prevent duplicates)
+        const filtered = prev.filter(t => t.id !== todo.id);
+        // Add to end of destination quadrant and reorder
+        const destQuadrant = filtered.filter(t => t.quadrant === toQuadrant && !t.completed);
+        const others = filtered.filter(t => t.quadrant !== toQuadrant || t.completed);
+        const newDest = addAndReorder(destQuadrant, { ...todo, quadrant: toQuadrant });
+        // Persist destination list
+        fetch('/api/todos', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ updates: newDest.map((t, idx) => ({ id: t.id, order: idx })) }),
+        });
+        return [...others, ...newDest];
+      });
+      setPendingMove({ todoId: todo.id, toQuadrant });
+    }
+  }, [updateTodo]);
+
+  /**
+   * Permanently deletes a todo.
+   * - Removes from all lists, reorders the remaining tasks in the same quadrant, and persists the new order.
+   */
+  const permanentlyDeleteTodo = useCallback(async (id: string) => {
+    // Find the todo to get its quadrant
+    const todo = todos.find(t => t.id === id);
+    if (!todo) return;
+    await fetch('/api/todos', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    });
+    setTodos(prev => {
+      // Remove from all lists
+      const filtered = prev.filter(t => t.id !== id);
+      // Reorder the remaining tasks in the same quadrant
+      const quadrantTodos = filtered.filter(t => t.quadrant === todo.quadrant && !t.completed);
+      const others = filtered.filter(t => t.quadrant !== todo.quadrant || t.completed);
+      const reordered = quadrantTodos.map((t, idx) => ({ ...t, order: idx }));
+      // Persist new order
+      fetch('/api/todos', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ updates: reordered.map((t, idx) => ({ id: t.id, order: idx })) }),
+      });
+      return [...others, ...reordered];
+    });
   }, [todos]);
 
+  // Reorder todo (persisted to DB)
   /**
-   * Adds a new todo to the inbox quadrant
+   * Reorders a todo within a quadrant and persists the new order to the database.
+   * - Used for intra-quadrant drag-and-drop.
+   * - Updates the order field for all todos in the quadrant to match their new position.
    */
-  const addTodo = useCallback((text: string) => {
-    if (!text.trim()) return; // Prevent empty todos
-    const newTodo: Todo = {
-      id: Date.now().toString(),
-      text,
-      completed: false,
-      isWaiting: false,
-      createdAt: new Date(),
-      quadrant: "inbox", // Initialize with inbox quadrant
-    };
-    setTodos((prev) => [...prev, newTodo]);
-  }, []);
-
-  /**
-   * Marks a todo as completed (finished)
-   */
-  const deleteTodo = useCallback((id: string) => {
-    setTodos((prev) =>
-      prev.map((todo) =>
-        todo.id === id ? { ...todo, completed: true } : todo
-      )
-    );
-  }, []);
-
-  /**
-   * Permanently removes a todo from the list
-   */
-  const permanentlyDeleteTodo = useCallback((id: string) => {
-    setTodos((prev) => prev.filter((todo) => todo.id !== id));
-  }, []);
-
-  /**
-   * Restores a finished todo back to active status
-   */
-  const restoreTodo = useCallback((id: string) => {
-    setTodos((prev) =>
-      prev.map((todo) =>
-        todo.id === id ? { ...todo, completed: false } : todo
-      )
-    );
-  }, []);
-
-  /**
-   * Toggles a todo's completion status
-   */
-  const toggleTodo = useCallback((id: string) => {
-    setTodos((prev) =>
-      prev.map((todo) =>
-        todo.id === id ? { ...todo, completed: !todo.completed } : todo
-      )
-    );
-  }, []);
-
-  /**
-   * Toggles the waiting status of a todo
-   * @param id - The ID of the todo to toggle
-   */
-  const toggleWaiting = useCallback((id: string) => {
-    setTodos((prev) =>
-      prev.map((todo) =>
-        todo.id === id ? { ...todo, isWaiting: !todo.isWaiting } : todo
-      )
-    );
-  }, []);
-
-  /**
-   * Updates the text content of a todo
-   * @param id - The ID of the todo to update
-   * @param text - The new text content
-   */
-  const updateTodoText = useCallback((id: string, text: string) => {
-    if (!text.trim()) return; // Prevent empty text
-    setTodos((prev) =>
-      prev.map((todo) => (todo.id === id ? { ...todo, text } : todo))
-    );
-  }, []);
-
-  /**
-   * Updates the due date of a todo
-   * @param id - The ID of the todo to update
-   * @param date - The new due date (can be undefined to remove the due date)
-   */
-  const updateTodoDueDate = useCallback(
-    (id: string, date: Date | undefined) => {
-      setTodos((prev) =>
-        prev.map((todo) => (todo.id === id ? { ...todo, dueDate: date } : todo))
-      );
-    },
-    []
-  );
-
-  /**
-   * Updates the note of a todo
-   * @param id - The ID of the todo to update
-   * @param note - The new note content
-   */
-  const updateTodoNote = useCallback((id: string, note: string) => {
-    setTodos((prev) =>
-      prev.map((todo) => (todo.id === id ? { ...todo, note } : todo))
-    );
-  }, []);
-
-  /**
-   * Moves a todo from one quadrant to another
-   * @param todo - The todo to move
-   * @param fromQuadrant - The source quadrant
-   * @param toQuadrant - The destination quadrant
-   * @remarks
-   * The todo's quadrant is updated to the new location.
-   * This is the only operation that changes a todo's quadrant.
-   */
-  const moveTodo = useCallback(
-    (todo: Todo, fromQuadrant: QuadrantKey, toQuadrant: QuadrantKey) => {
-      setTodos((prev) =>
-        prev.map((t) =>
-          t.id === todo.id
-            ? {
-                ...t,
-                quadrant: toQuadrant,
-              }
-            : t
-        )
-      );
-    },
-    []
-  );
-
-  /**
-   * Reorders a todo within the same quadrant
-   * @param todoId - The id of the todo to move
-   * @param toQuadrant - The quadrant key
-   * @param toIndex - The index to move the todo to
-   */
-  const reorderTodo = useCallback((todoId: string, toQuadrant: QuadrantKey, toIndex: number) => {
-    setTodos((prev) => {
-      // Get all todos in the target quadrant
+  const reorderTodo = useCallback(async (todoId: string, toQuadrant: QuadrantKey, toIndex: number) => {
+    setTodos(prev => {
       const filtered = prev.filter((t) => t.quadrant === toQuadrant && !t.completed);
       const other = prev.filter((t) => t.quadrant !== toQuadrant || t.completed);
       const fromIndex = filtered.findIndex((t) => t.id === todoId);
       if (fromIndex === -1) return prev;
       const [moved] = filtered.splice(fromIndex, 1);
       filtered.splice(toIndex, 0, moved);
-      // Rebuild the todos array, preserving order for other quadrants
-      const reordered = [
-        ...other,
-        ...filtered
-      ];
-      // Sort by createdAt for finished todos if needed
-      return reordered;
+      // Update order field for all todos in this quadrant
+      // The backend PATCH will persist the new order values
+      const updates = filtered.map((t, idx) => ({ id: t.id, order: idx }));
+      fetch('/api/todos', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ updates }),
+      });
+      return [...other, ...filtered];
     });
   }, []);
 
   /**
-   * Reorders todos within a specific quadrant
-   * @param quadrant - The quadrant key
-   * @param newOrder - The new ordered array of todos for that quadrant
+   * Reorders all todos in a quadrant and persists the new order to the database.
+   * - Used after intra-quadrant reordering or after a cross-quadrant move (to place the moved todo at the end).
+   * - Ensures the order field is always correct and unique within the quadrant.
+   * - The backend PATCH will persist the new order values.
    */
-  const reorderTodosInQuadrant = useCallback((quadrant: QuadrantKey, newOrder: Todo[]) => {
-    setTodos((prev) => {
-      // Remove todos from this quadrant
+  const reorderTodosInQuadrant = useCallback(async (quadrant: QuadrantKey, newOrder: Todo[]) => {
+    setTodos(prev => {
       const others = prev.filter((t) => t.quadrant !== quadrant);
-      // Add the reordered todos for this quadrant
+      // Update order field for all todos in this quadrant
+      const updates = newOrder.map((t, idx) => ({ id: t.id, order: idx }));
+      fetch('/api/todos', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ updates }),
+      });
       return [...others, ...newOrder];
     });
   }, []);
 
-  /**
-   * Memoized context value to prevent unnecessary re-renders
-   * Only updates when dependencies change
-   */
-  const value = useMemo(
-    () => ({
-      quadrants,
-      finished: todos.filter((t) => t.completed),
-      addTodo,
-      deleteTodo,
-      permanentlyDeleteTodo,
-      restoreTodo,
-      toggleTodo,
-      toggleWaiting,
-      updateTodoText,
-      updateTodoDueDate,
-      updateTodoNote,
-      moveTodo,
-      reorderTodo,
-      reorderTodosInQuadrant,
-    }),
-    [
-      quadrants,
-      todos,
-      addTodo,
-      deleteTodo,
-      permanentlyDeleteTodo,
-      restoreTodo,
-      toggleTodo,
-      toggleWaiting,
-      updateTodoText,
-      updateTodoDueDate,
-      updateTodoNote,
-      moveTodo,
-      reorderTodo,
-      reorderTodosInQuadrant,
-    ]
-  );
+  const value = useMemo(() => ({
+    quadrants,
+    finished: todos.filter(t => t.completed).sort((a, b) => a.order - b.order),
+    addTodo,
+    deleteTodo: markCompleted, // soft delete (mark as completed)
+    permanentlyDeleteTodo,
+    restoreTodo,
+    toggleTodo,
+    toggleWaiting,
+    updateTodoText,
+    updateTodoDueDate,
+    updateTodoNote,
+    moveTodo,
+    reorderTodo,
+    reorderTodosInQuadrant,
+    pendingMove,
+    setPendingMove,
+    setTodos,
+  }), [quadrants, todos, addTodo, markCompleted, permanentlyDeleteTodo, restoreTodo, toggleTodo, toggleWaiting, updateTodoText, updateTodoDueDate, updateTodoNote, moveTodo, reorderTodo, reorderTodosInQuadrant, pendingMove, setPendingMove, setTodos]);
 
   return <TodoContext.Provider value={value}>{children}</TodoContext.Provider>;
 }

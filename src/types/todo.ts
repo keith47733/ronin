@@ -27,6 +27,7 @@ export type QuadrantKey =
  * @property originalQuadrant - The original quadrant the todo was in
  * @property previousQuadrant - The previous quadrant the todo was in
  * @property deleted - Whether the todo is marked as deleted
+ * @property order - The order of the todo in its quadrant
  */
 export interface Todo {
   id: string;
@@ -38,6 +39,7 @@ export interface Todo {
   dueDate?: Date;
   note?: string;
   deleted?: boolean;
+  order: number;
 }
 
 export interface DragData {

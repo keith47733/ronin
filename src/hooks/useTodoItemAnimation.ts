@@ -1,9 +1,14 @@
+// useTodoItemAnimation is a custom React hook for animating the finish (complete) action on a todo item.
+// Provides a function to trigger a checkmark animation on a button, then calls a callback.
+// Useful for providing visual feedback when a todo is marked as finished.
 import { useState, useCallback } from "react";
 import { CircleCheckBig } from "lucide-react";
 
 export function useTodoItemAnimation() {
+  // Track if an animation is currently running
   const [isAnimating, setIsAnimating] = useState(false);
 
+  // Animate the finish action on a button, then call onFinish
   const animateFinish = useCallback((button: HTMLButtonElement, onFinish: () => void) => {
     if (isAnimating) return;
     

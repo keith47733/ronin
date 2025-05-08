@@ -1,3 +1,6 @@
+// Quadrant configuration constants for the Eisenhower Matrix UI.
+// Each quadrant (and the finished list) has a config for title, subtitle, colors, and chevron styles.
+// This pattern centralizes UI config for consistency and easy updates.
 import { QuadrantConfig } from "@/types/todo";
 
 export const QUADRANT_CONFIGS: Record<string, QuadrantConfig> = {

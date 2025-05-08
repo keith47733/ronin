@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useImperativeHandle, forwardRef } from "react";
 import {
   // DndContext,
   // closestCenter,
@@ -50,7 +50,10 @@ function SortableItem({ todo, renderItem }: { todo: Todo; renderItem: (todo: Tod
   );
 }
 
-export function DndListView({ items, onReorder, renderItem, listClassName, gradientColor, quadrantId }: DndListViewProps) {
+export const DndListView = forwardRef<
+  { scrollToBottom: () => void },
+  DndListViewProps
+>(function DndListView({ items, onReorder, renderItem, listClassName, gradientColor, quadrantId }, ref) {
   // Remove DndContext and sensors
   // const [activeId, setActiveId] = React.useState<string | null>(null);
   // const sensors = useSensors(useSensor(PointerSensor));
@@ -84,6 +87,15 @@ export function DndListView({ items, onReorder, renderItem, listClassName, gradi
     };
   }, [items.length]);
 
+  // Expose scrollToBottom method to parent via ref
+  useImperativeHandle(ref, () => ({
+    scrollToBottom: () => {
+      if (scrollRef.current) {
+        scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      }
+    },
+  }));
+
   return (
     <div className="relative h-full flex flex-col overflow-hidden">
       {/* Show gradient masks only when not at top/bottom */}
@@ -104,4 +116,4 @@ export function DndListView({ items, onReorder, renderItem, listClassName, gradi
       </div>
     </div>
   );
-} 
+}); 

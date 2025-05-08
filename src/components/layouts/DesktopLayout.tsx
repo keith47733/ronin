@@ -95,12 +95,13 @@ export function DesktopLayout() {
           <div className="absolute top-1/2 left-2 right-2 h-[1px] bg-gray-400 -translate-y-1/2 z-10 pointer-events-none"></div>
 
           {/* Centered Logo */}
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[1000]">
+          <div className="absolute left-1/2 top-[57.5%] -translate-x-1/2 -translate-y-1/2 z-[1000] mt-[-8px]">
             <Image
               src="/katana.png"
               alt="Katana Icon"
               width={72}
               height={72}
+              style={{ height: 'auto' }}
               className="opacity-100 blur-[15%] filter brightness-0 rounded-md transition-transform duration-300 hover:scale-[1.2] rotate-[30deg]"
               priority
             />

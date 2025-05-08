@@ -42,6 +42,7 @@ const AnimationContext = createContext<AnimationContextType | undefined>(
  * 3. Access finishedButtonRef for completion animations
  */
 export function AnimationProvider({ children }: { children: React.ReactNode }) {
+  // Ref to the finished button, used for animating todos to it
   const finishedButtonRef = useRef<HTMLButtonElement>(null);
 
   return (

@@ -1,7 +1,13 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/*
+  Global CSS for the Next.js app. This file is imported in the root layout and applies to all pages/components.
+  Uses Tailwind CSS for utility classes and customizes some base styles and variables.
+*/
 
+@tailwind base;        /* Tailwind's base styles (resets, typography, etc.) */
+@tailwind components;  /* Tailwind's component classes */
+@tailwind utilities;   /* Tailwind's utility classes */
+
+/* --- Custom Keyframes for Animations --- */
 @keyframes shrink-right {
   0% {
     transform: translateX(0) scale(1);
@@ -35,6 +41,7 @@
   }
 }
 
+/* --- Animation Utility Classes --- */
 .animate-shrink-right {
   animation: shrink-right 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
   pointer-events: none;
@@ -50,6 +57,7 @@
   pointer-events: none;
 }
 
+/* --- CSS Variables for Theme and Fonts --- */
 :root {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -57,18 +65,18 @@
   --font-mono: var(--font-lato);
 }
 
-/* Base font settings */
+/* Base font settings for the app */
 body {
   font-family: var(--font-lato), Arial, Helvetica, sans-serif;
   font-size: 0.8em;
 }
 
-/* Header styles */
+/* Header font styles */
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-ronin), sans-serif;
 }
 
-/* Utility classes for fonts */
+/* Utility classes for custom fonts */
 .font-ronin {
   font-family: var(--font-ronin), sans-serif;
 }
@@ -81,7 +89,7 @@ h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-lato), sans-serif;
 }
 
-/* Title and subtitle styles */
+/* Title and subtitle font weights */
 .title {
   font-family: var(--font-karla), sans-serif;
   font-weight: 700;
@@ -92,7 +100,8 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 500;
 }
 
-/* Hide scrollbars while maintaining functionality */
+/* --- Hide Scrollbars Utility --- */
+/* Hide scrollbars but keep scroll functionality (for custom scroll areas) */
 .scrollbar-none {
   -ms-overflow-style: none; /* IE and Edge */
   scrollbar-width: none; /* Firefox */
@@ -102,13 +111,7 @@ h1, h2, h3, h4, h5, h6 {
   display: none; /* Chrome, Safari and Opera */
 }
 
-/* Remove existing scrollbar styles as they're no longer needed */
-
-/* Debug: 1px green border around every element */
-/* * {
-  box-shadow: inset 0 0 0 1px #22c55e !important;
-} */
-
+/* --- Tailwind Color Variables for Light/Dark Themes --- */
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -165,6 +168,7 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
+/* --- Tailwind Base Layer Customization --- */
 @layer base {
   * {
     @apply border-border;

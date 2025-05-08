@@ -13,58 +13,40 @@ import FinishedButtonInHeader from "@/components/FloatingFinishedButton";
 /**
  * Header Component
  *
- * The main header component of the application that provides:
- * - Branding and logo display
- * - Application title
- * - Tagline
- * - Access to finished tasks
- *
- * Key Features:
- * 1. Brand Identity:
- *    - Displays the Ronin logo
- *    - Shows application name in custom font
- *    - Includes tagline for larger screens
- *
- * 2. Task Management:
- *    - Shows count of finished tasks
- *    - Provides access to finished tasks modal
- *    - Disables button when no finished tasks exist
- *
- * 3. Responsive Design:
- *    - Adapts layout for different screen sizes
- *    - Hides tagline on mobile devices
- *    - Adjusts font sizes for better readability
- *
- * 4. Visual Feedback:
- *    - Hover effects on interactive elements
- *    - Disabled state styling
- *    - Smooth transitions
- *
- * @component
+ * Provides:
+ * - App branding (logo, title, tagline)
+ * - Responsive layout for mobile/desktop
+ * - Access to finished tasks modal
+ * - Uses context for todo and modal state
  */
-
 export default function Header() {
+  // Get finished todos from context
   const { finished } = useTodo();
+  // Modal state and actions
   const { activeModal, modalData, openModal, closeModal } = useModal();
+  // Animation context for finished button ref
   const { finishedButtonRef } = useAnimation();
+  // Track scroll state for potential UI effects
   const [isScrolled, setIsScrolled] = useState(false);
 
+  // Listen for scroll to update isScrolled (could be used for sticky/fade effects)
   useEffect(() => {
     const handleScroll = () => {
       const scrollPosition = window.scrollY;
       setIsScrolled(scrollPosition > 100);
     };
-
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Open the finished tasks modal
   const handleOpenFinished = () => {
     openModal("finished", { todos: finished });
   };
 
   return (
     <>
+      {/* App header: logo, title, tagline (responsive) */}
       <header className="relative flex flex-col p-3 bg-black text-white min-h-[72px]">
         {/* First row: Logo/Title (left), Finished Button (right) */}
         <div className="flex items-center justify-between w-full h-full">
@@ -94,6 +76,7 @@ export default function Header() {
           </h2>
         </div>
       </header>
+      {/* FinishedModal is rendered here, controlled by modal context */}
       <FinishedModal
         isOpen={activeModal === "finished"}
         onClose={closeModal}

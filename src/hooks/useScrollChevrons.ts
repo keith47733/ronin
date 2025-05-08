@@ -1,10 +1,16 @@
+// useScrollChevrons is a custom React hook for managing scroll chevron visibility and actions in a scrollable container.
+// Provides refs and functions to show/hide chevrons and scroll up/down smoothly.
+// Useful for custom scrollable UIs where you want to indicate overflow and provide navigation controls.
 import { useRef, useState, useEffect, useCallback } from "react";
 
 export function useScrollChevrons() {
+  // Ref to the scrollable container
   const containerRef = useRef<HTMLDivElement>(null);
+  // State for showing/hiding top and bottom chevrons
   const [showTopChevron, setShowTopChevron] = useState(false);
   const [showBottomChevron, setShowBottomChevron] = useState(false);
 
+  // Check scroll position to determine chevron visibility
   const checkScroll = useCallback(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -39,6 +45,7 @@ export function useScrollChevrons() {
     };
   }, [checkScroll]);
 
+  // Scroll up by 100px smoothly
   const scrollUp = useCallback(() => {
     const container = containerRef.current;
     if (container) {
@@ -46,6 +53,7 @@ export function useScrollChevrons() {
     }
   }, []);
 
+  // Scroll down by 100px smoothly
   const scrollDown = useCallback(() => {
     const container = containerRef.current;
     if (container) {

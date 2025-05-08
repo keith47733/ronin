@@ -2,6 +2,10 @@
 
 import { useState, useEffect } from "react";
 
+// useResponsiveLayout is a custom React hook for detecting if the app is in desktop or mobile mode.
+// Returns true if the viewport is >= 1024px (Tailwind's lg breakpoint), false otherwise.
+// Useful for conditionally rendering layouts or components based on screen size in a Next.js app.
+
 /**
  * Custom hook for handling responsive layout
  *

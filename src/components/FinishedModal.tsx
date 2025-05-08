@@ -40,14 +40,24 @@ import { Todo } from "@/types/todo";
 import { useDragAndDrop } from "@/hooks/useDragAndDrop";
 import { DndListView } from "./DndListView";
 import { QUADRANT_CONFIGS } from "@/constants/quadrants";
+import { useTodo } from "@/context/TodoContext";
 
+/**
+ * FinishedModal
+ *
+ * - Shows a modal with a scrollable list of finished (completed) tasks
+ * - Allows restoring tasks to active state
+ * - Integrates with drag-and-drop (DnD) for moving tasks out
+ * - Closes automatically if all finished tasks are restored
+ * - Uses quadrant config for consistent styling
+ */
 interface FinishedModalProps {
   isOpen: boolean; // Controls modal visibility
   onClose: () => void; // Callback when modal is closed
   finished: Todo[]; // List of completed tasks
 }
 
-// Use the finished config for modal colors
+// Use the finished config for modal colors and styles
 const finishedConfig = QUADRANT_CONFIGS.finished;
 
 export default function FinishedModal({
@@ -70,15 +80,18 @@ export default function FinishedModal({
       },
     });
 
-  // Close the modal when the last todo is restored
+  // Close the modal when the last finished todo is restored
   const handleRestore = () => {
     if (finished.length === 1) {
       onClose();
     }
   };
 
-  // Center modal horizontally on mobile, keep right-aligned on desktop
+  // Responsive: center modal on mobile, right-align on desktop
   const isDesktop = typeof window !== "undefined" ? window.innerWidth >= 1024 : true;
+
+  // Add robust pendingMove handling for finished todos
+  // (Removed useEffect that reorders finished list)
 
   return (
     <Modal

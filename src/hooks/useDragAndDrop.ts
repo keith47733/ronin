@@ -1,3 +1,6 @@
+// useDragAndDrop is a custom React hook for managing drag-and-drop state and handlers.
+// Provides event handlers for drag start, drag end, drop, drag over, and drag leave.
+// Useful for implementing custom DnD logic in React apps (outside of libraries like dnd-kit).
 import { useState } from "react";
 import { DragData, Todo } from "@/types/todo";
 
@@ -7,9 +10,12 @@ interface UseDragAndDropProps {
 }
 
 export function useDragAndDrop({ onDrop, onError }: UseDragAndDropProps) {
+  // Track if a drag is in progress
   const [isDragging, setIsDragging] = useState(false);
+  // Track the current drag target element
   const [dragTarget, setDragTarget] = useState<HTMLElement | null>(null);
 
+  // Handler for drag start
   const handleDragStart = (todo: Todo) => (e: DragEvent) => {
     try {
       setIsDragging(true);
@@ -31,10 +37,12 @@ export function useDragAndDrop({ onDrop, onError }: UseDragAndDropProps) {
     }
   };
 
+  // Handler for drag end
   const handleDragEnd = () => {
     setIsDragging(false);
   };
 
+  // Handler for drop
   const handleDrop = (e: DragEvent) => {
     try {
       e.preventDefault();
@@ -53,6 +61,7 @@ export function useDragAndDrop({ onDrop, onError }: UseDragAndDropProps) {
     }
   };
 
+  // Handler for drag over
   const handleDragOver = (e: DragEvent) => {
     try {
       e.preventDefault();
@@ -68,6 +77,7 @@ export function useDragAndDrop({ onDrop, onError }: UseDragAndDropProps) {
     }
   };
 
+  // Handler for drag leave
   const handleDragLeave = (e: DragEvent) => {
     try {
       if (e.currentTarget instanceof HTMLElement) {

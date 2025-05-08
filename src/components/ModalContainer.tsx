@@ -8,10 +8,21 @@ import NoteModal from "@/components/NoteModal";
 import { DueDateModalData, NoteModalData } from "@/types/modal";
 import { Modal } from "@/components/Modal";
 
+/**
+ * ModalContainer
+ *
+ * Renders the appropriate modal based on modal context state.
+ * - Handles due date, note, and error modals.
+ * - Passes save handlers and initial data to each modal.
+ * - Ensures only one modal is open at a time.
+ */
 export default function ModalContainer() {
+  // Modal state and actions
   const { activeModal, modalData, closeModal } = useModal();
+  // Todo actions for updating due date and note
   const { updateTodoDueDate, updateTodoNote } = useTodo();
 
+  // Handler for saving due date from DueDateModal
   const handleSaveDueDate = (date: Date | undefined) => {
     const data = modalData as DueDateModalData;
     if (data?.todoId) {
@@ -20,6 +31,7 @@ export default function ModalContainer() {
     closeModal();
   };
 
+  // Handler for saving note from NoteModal
   const handleSaveNote = (note: string) => {
     const data = modalData as NoteModalData;
     if (data?.todoId) {
@@ -30,6 +42,7 @@ export default function ModalContainer() {
 
   return (
     <>
+      {/* Conditionally render the due date modal */}
       {activeModal === "dueDate" && (
         <DueDateModal
           isOpen={true}
@@ -38,6 +51,7 @@ export default function ModalContainer() {
           initialDate={(modalData as DueDateModalData)?.initialDate}
         />
       )}
+      {/* Conditionally render the note modal */}
       {activeModal === "note" && (
         <NoteModal
           isOpen={true}
@@ -46,6 +60,7 @@ export default function ModalContainer() {
           initialNote={(modalData as NoteModalData)?.initialNote}
         />
       )}
+      {/* Conditionally render the error modal */}
       {activeModal === "error" && (
         <Modal
           isOpen={true}
