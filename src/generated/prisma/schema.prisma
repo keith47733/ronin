@@ -15,14 +15,15 @@ datasource db {
 }
 
 model Todo {
-  id        String    @id @default(uuid())
-  text      String
-  completed Boolean
-  isWaiting Boolean
-  createdAt DateTime  @default(now())
-  dueDate   DateTime? // optional
-  note      String? // optional
-  quadrant  String
-  deleted   Boolean? // optional
-  order     Int       @default(0)
+  id                String   @id @default(uuid())
+  text              String
+  completed         Boolean
+  isWaiting         Boolean
+  createdAt         DateTime @default(now())
+  completedAt       DateTime?  // optional timestamp for when the todo was completed
+  dueDate           DateTime?  // optional
+  note              String?    // optional
+  quadrant          String
+  deleted           Boolean?   // optional
+  order             Int      @default(0)
 }

@@ -11,6 +11,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { QUADRANT_CONFIGS } from "@/constants/quadrants";
+import { Todo } from "@/types/todo";
 
 /**
  * DesktopLayout Component
@@ -59,16 +60,28 @@ export function DesktopLayout() {
     <div className="flex flex-row h-[calc(100vh-80px)] overflow-hidden p-2 gap-2">
       {/* Left Panel - Inbox */}
       <div className="w-1/3 h-full">
-        <div className="h-full border border-gray-400 rounded-lg p-2">
+        <div className="h-full relative border border-gray-400 rounded-lg p-2"> 
           <TodoList />
+            {/* Centered Ronin Logo in Right Panel */}
+            <div className="absolute inset-0 flex items-center justify-center z-[2000] pointer-events-none pt-[20%] p-[5%]">
+              <Image
+                  src="/ronin-face.png"
+                  alt="Ronin Face"
+                  width={550}
+                  height={700}
+                  style={{ width: '80%', height: 'auto', opacity: 0.025 }}
+                  className="blur-xs"
+                  priority
+                />
+            </div>
         </div>
       </div>
 
       {/* Right Panel - Quadrants */}
       <div className="w-2/3 h-full">
-        <div className="h-full relative">
+        <div className="h-full relative border border-gray-400 rounded-lg p-2">
           {/* Grid Container */}
-          <div className="grid grid-cols-2 grid-rows-2 gap-3 h-full p-3">
+          <div className="grid grid-cols-2 grid-rows-2 gap-3 h-full">
             {(["urgentImportant", "notUrgentImportant", "urgentNotImportant", "notUrgentNotImportant"] as QuadrantKey[]).map((quadrantKey) => {
               const config = QUADRANT_CONFIGS[quadrantKey];
               return (
@@ -93,21 +106,21 @@ export function DesktopLayout() {
 
           {/* Horizontal Divider */}
           <div className="absolute top-1/2 left-2 right-2 h-[1px] bg-gray-400 -translate-y-1/2 z-10 pointer-events-none"></div>
-
-          {/* Centered Logo */}
-          <div className="absolute left-1/2 top-[57.5%] -translate-x-1/2 -translate-y-1/2 z-[1000] mt-[-8px]">
+        
+          {/* Centered Katana Logo in Left Panel */}
+          <div className="absolute inset-0 flex items-center justify-center z-[2000] pointer-events-none p-[2%]">
             <Image
               src="/katana.png"
               alt="Katana Icon"
-              width={72}
-              height={72}
-              style={{ height: 'auto' }}
-              className="opacity-100 blur-[15%] filter brightness-0 rounded-md transition-transform duration-300 hover:scale-[1.2] rotate-[30deg]"
+              width={580}
+              height={1300}
+              style={{ width: 'auto', height: '98%', opacity: 0.02 }}
+              className="rotate-[30deg] blur-xs"
               priority
             />
-          </div>
+          </div>   
         </div>
       </div>
-    </div>
+    </div>  
   );
 }

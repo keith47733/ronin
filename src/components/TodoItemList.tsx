@@ -134,7 +134,7 @@ export function TodoItemList({
         children.push(
           <div
             key={todos[i].id}
-            className="w-[98%] mx-auto scroll-mt-1 scroll-mb-1"
+            className="w-[95%] mx-auto scroll-mt-1 scroll-mb-1"
             style={{ scrollSnapAlign: "start" }}
             draggable
             onDragStart={handleDragStart(todos[i])}
@@ -160,7 +160,7 @@ export function TodoItemList({
     children = todos.map((todo) => (
       <div
         key={todo.id}
-        className="w-[98%] mx-auto scroll-mt-1 scroll-mb-1"
+        className="w-[95%] mx-auto scroll-mt-1 scroll-mb-1"
         style={{ scrollSnapAlign: "start" }}
         draggable
         onDragStart={handleDragStart(todo)}

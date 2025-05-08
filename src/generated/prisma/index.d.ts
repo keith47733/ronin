@@ -21,7 +21,7 @@ export type Todo = $Result.DefaultSelection<Prisma.$TodoPayload>
 
 /**
  * ##  Prisma Client ʲˢ
- *
+ * 
  * Type-safe database client for TypeScript & Node.js
  * @example
  * ```
@@ -30,19 +30,19 @@ export type Todo = $Result.DefaultSelection<Prisma.$TodoPayload>
  * const todos = await prisma.todo.findMany()
  * ```
  *
- *
+ * 
  * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client).
  */
 export class PrismaClient<
-  ClientOptions extends Prisma.PrismaClientOptions = Prisma.PrismaClientOptions,
-  U = 'log' extends keyof ClientOptions ? ClientOptions['log'] extends Array<Prisma.LogLevel | Prisma.LogDefinition> ? Prisma.GetEvents<ClientOptions['log']> : never : never,
+  T extends Prisma.PrismaClientOptions = Prisma.PrismaClientOptions,
+  U = 'log' extends keyof T ? T['log'] extends Array<Prisma.LogLevel | Prisma.LogDefinition> ? Prisma.GetEvents<T['log']> : never : never,
   ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs
 > {
   [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['other'] }
 
     /**
    * ##  Prisma Client ʲˢ
-   *
+   * 
    * Type-safe database client for TypeScript & Node.js
    * @example
    * ```
@@ -51,12 +51,12 @@ export class PrismaClient<
    * const todos = await prisma.todo.findMany()
    * ```
    *
-   *
+   * 
    * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client).
    */
 
-  constructor(optionsArg ?: Prisma.Subset<ClientOptions, Prisma.PrismaClientOptions>);
-  $on<V extends U>(eventType: V, callback: (event: V extends 'query' ? Prisma.QueryEvent : Prisma.LogEvent) => void): PrismaClient;
+  constructor(optionsArg ?: Prisma.Subset<T, Prisma.PrismaClientOptions>);
+  $on<V extends U>(eventType: V, callback: (event: V extends 'query' ? Prisma.QueryEvent : Prisma.LogEvent) => void): void;
 
   /**
    * Connect with the database
@@ -81,7 +81,7 @@ export class PrismaClient<
    * ```
    * const result = await prisma.$executeRaw`UPDATE User SET cool = ${true} WHERE email = ${'user@email.com'};`
    * ```
-   *
+   * 
    * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client/raw-database-access).
    */
   $executeRaw<T = unknown>(query: TemplateStringsArray | Prisma.Sql, ...values: any[]): Prisma.PrismaPromise<number>;
@@ -93,7 +93,7 @@ export class PrismaClient<
    * ```
    * const result = await prisma.$executeRawUnsafe('UPDATE User SET cool = $1 WHERE email = $2 ;', true, 'user@email.com')
    * ```
-   *
+   * 
    * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client/raw-database-access).
    */
   $executeRawUnsafe<T = unknown>(query: string, ...values: any[]): Prisma.PrismaPromise<number>;
@@ -104,7 +104,7 @@ export class PrismaClient<
    * ```
    * const result = await prisma.$queryRaw`SELECT * FROM User WHERE id = ${1} OR email = ${'user@email.com'};`
    * ```
-   *
+   * 
    * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client/raw-database-access).
    */
   $queryRaw<T = unknown>(query: TemplateStringsArray | Prisma.Sql, ...values: any[]): Prisma.PrismaPromise<T>;
@@ -116,11 +116,10 @@ export class PrismaClient<
    * ```
    * const result = await prisma.$queryRawUnsafe('SELECT * FROM User WHERE id = $1 OR email = $2;', 1, 'user@email.com')
    * ```
-   *
+   * 
    * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client/raw-database-access).
    */
   $queryRawUnsafe<T = unknown>(query: string, ...values: any[]): Prisma.PrismaPromise<T>;
-
 
   /**
    * Allows the running of a sequence of read/write operations that are guaranteed to either succeed or fail as a whole.
@@ -140,9 +139,7 @@ export class PrismaClient<
   $transaction<R>(fn: (prisma: Omit<PrismaClient, runtime.ITXClientDenyList>) => $Utils.JsPromise<R>, options?: { maxWait?: number, timeout?: number, isolationLevel?: Prisma.TransactionIsolationLevel }): $Utils.JsPromise<R>
 
 
-  $extends: $Extensions.ExtendsHook<"extends", Prisma.TypeMapCb<ClientOptions>, ExtArgs, $Utils.Call<Prisma.TypeMapCb<ClientOptions>, {
-    extArgs: ExtArgs
-  }>>
+  $extends: $Extensions.ExtendsHook<'extends', Prisma.TypeMapCb, ExtArgs>
 
       /**
    * `prisma.todo`: Exposes CRUD operations for the **Todo** model.
@@ -152,7 +149,7 @@ export class PrismaClient<
     * const todos = await prisma.todo.findMany()
     * ```
     */
-  get todo(): Prisma.TodoDelegate<ExtArgs, ClientOptions>;
+  get todo(): Prisma.TodoDelegate<ExtArgs>;
 }
 
 export namespace Prisma {
@@ -173,6 +170,7 @@ export namespace Prisma {
   export import PrismaClientRustPanicError = runtime.PrismaClientRustPanicError
   export import PrismaClientInitializationError = runtime.PrismaClientInitializationError
   export import PrismaClientValidationError = runtime.PrismaClientValidationError
+  export import NotFoundError = runtime.NotFoundError
 
   /**
    * Re-export of sql-template-tag
@@ -183,8 +181,6 @@ export namespace Prisma {
   export import raw = runtime.raw
   export import Sql = runtime.Sql
 
-
-
   /**
    * Decimal.js
    */
@@ -193,7 +189,7 @@ export namespace Prisma {
   export type DecimalJsLike = runtime.DecimalJsLike
 
   /**
-   * Metrics
+   * Metrics 
    */
   export type Metrics = runtime.Metrics
   export type Metric<T> = runtime.Metric<T>
@@ -211,38 +207,76 @@ export namespace Prisma {
   export import Exact = $Public.Exact
 
   /**
-   * Prisma Client JS version: 6.7.0
-   * Query Engine version: 3cff47a7f5d65c3ea74883f1d736e41d68ce91ed
+   * Prisma Client JS version: 5.10.2
+   * Query Engine version: 5a9203d0590c951969e85a7d07215503f4672eb9
    */
   export type PrismaVersion = {
     client: string
   }
 
-  export const prismaVersion: PrismaVersion
+  export const prismaVersion: PrismaVersion 
 
   /**
    * Utility Types
    */
 
+  /**
+   * From https://github.com/sindresorhus/type-fest/
+   * Matches a JSON object.
+   * This type can be useful to enforce some input to be JSON-compatible or as a super-type to be extended from. 
+   */
+  export type JsonObject = {[Key in string]?: JsonValue}
 
-  export import JsonObject = runtime.JsonObject
-  export import JsonArray = runtime.JsonArray
-  export import JsonValue = runtime.JsonValue
-  export import InputJsonObject = runtime.InputJsonObject
-  export import InputJsonArray = runtime.InputJsonArray
-  export import InputJsonValue = runtime.InputJsonValue
+  /**
+   * From https://github.com/sindresorhus/type-fest/
+   * Matches a JSON array.
+   */
+  export interface JsonArray extends Array<JsonValue> {}
+
+  /**
+   * From https://github.com/sindresorhus/type-fest/
+   * Matches any valid JSON value.
+   */
+  export type JsonValue = string | number | boolean | JsonObject | JsonArray | null
+
+  /**
+   * Matches a JSON object.
+   * Unlike `JsonObject`, this type allows undefined and read-only properties.
+   */
+  export type InputJsonObject = {readonly [Key in string]?: InputJsonValue | null}
+
+  /**
+   * Matches a JSON array.
+   * Unlike `JsonArray`, readonly arrays are assignable to this type.
+   */
+  export interface InputJsonArray extends ReadonlyArray<InputJsonValue | null> {}
+
+  /**
+   * Matches any valid value that can be used as an input for operations like
+   * create and update as the value of a JSON field. Unlike `JsonValue`, this
+   * type allows read-only arrays and read-only object properties and disallows
+   * `null` at the top level.
+   *
+   * `null` cannot be used as the value of a JSON field because its meaning
+   * would be ambiguous. Use `Prisma.JsonNull` to store the JSON null value or
+   * `Prisma.DbNull` to clear the JSON value and set the field to the database
+   * NULL value instead.
+   *
+   * @see https://www.prisma.io/docs/concepts/components/prisma-client/working-with-fields/working-with-json-fields#filtering-by-null-values
+   */
+  export type InputJsonValue = string | number | boolean | InputJsonObject | InputJsonArray | { toJSON(): unknown }
 
   /**
    * Types of the values used to represent different kinds of `null` values when working with JSON fields.
-   *
+   * 
    * @see https://www.prisma.io/docs/concepts/components/prisma-client/working-with-fields/working-with-json-fields#filtering-on-a-json-field
    */
   namespace NullTypes {
     /**
     * Type of `Prisma.DbNull`.
-    *
+    * 
     * You cannot use other instances of this class. Please use the `Prisma.DbNull` value.
-    *
+    * 
     * @see https://www.prisma.io/docs/concepts/components/prisma-client/working-with-fields/working-with-json-fields#filtering-on-a-json-field
     */
     class DbNull {
@@ -252,9 +286,9 @@ export namespace Prisma {
 
     /**
     * Type of `Prisma.JsonNull`.
-    *
+    * 
     * You cannot use other instances of this class. Please use the `Prisma.JsonNull` value.
-    *
+    * 
     * @see https://www.prisma.io/docs/concepts/components/prisma-client/working-with-fields/working-with-json-fields#filtering-on-a-json-field
     */
     class JsonNull {
@@ -264,9 +298,9 @@ export namespace Prisma {
 
     /**
     * Type of `Prisma.AnyNull`.
-    *
+    * 
     * You cannot use other instances of this class. Please use the `Prisma.AnyNull` value.
-    *
+    * 
     * @see https://www.prisma.io/docs/concepts/components/prisma-client/working-with-fields/working-with-json-fields#filtering-on-a-json-field
     */
     class AnyNull {
@@ -277,21 +311,21 @@ export namespace Prisma {
 
   /**
    * Helper for filtering JSON entries that have `null` on the database (empty on the db)
-   *
+   * 
    * @see https://www.prisma.io/docs/concepts/components/prisma-client/working-with-fields/working-with-json-fields#filtering-on-a-json-field
    */
   export const DbNull: NullTypes.DbNull
 
   /**
    * Helper for filtering JSON entries that have JSON `null` values (not empty on the db)
-   *
+   * 
    * @see https://www.prisma.io/docs/concepts/components/prisma-client/working-with-fields/working-with-json-fields#filtering-on-a-json-field
    */
   export const JsonNull: NullTypes.JsonNull
 
   /**
    * Helper for filtering JSON entries that are `Prisma.DbNull` or `Prisma.JsonNull`
-   *
+   * 
    * @see https://www.prisma.io/docs/concepts/components/prisma-client/working-with-fields/working-with-json-fields#filtering-on-a-json-field
    */
   export const AnyNull: NullTypes.AnyNull
@@ -299,11 +333,6 @@ export namespace Prisma {
   type SelectAndInclude = {
     select: any
     include: any
-  }
-
-  type SelectAndOmit = {
-    select: any
-    omit: any
   }
 
   /**
@@ -354,9 +383,7 @@ export namespace Prisma {
   } &
     (T extends SelectAndInclude
       ? 'Please either choose `select` or `include`.'
-      : T extends SelectAndOmit
-        ? 'Please either choose `select` or `omit`.'
-        : {})
+      : {})
 
   /**
    * Subset + Intersection
@@ -479,7 +506,7 @@ export namespace Prisma {
   type AtLeast<O extends object, K extends string> = NoExpand<
     O extends unknown
     ? | (K extends keyof O ? { [P in K]: O[P] } & O : O)
-      | {[P in keyof O as P extends K ? P : never]-?: O[P]} & O
+      | {[P in keyof O as P extends K ? K : never]-?: O[P]} & O
     : never>;
 
   type _Strict<U, _U = U> = U extends unknown ? U & OptionalFlat<_Record<Exclude<Keys<_U>, keyof U>, never>> : never;
@@ -603,89 +630,79 @@ export namespace Prisma {
     db?: Datasource
   }
 
-  interface TypeMapCb<ClientOptions = {}> extends $Utils.Fn<{extArgs: $Extensions.InternalArgs }, $Utils.Record<string, any>> {
-    returns: Prisma.TypeMap<this['params']['extArgs'], ClientOptions extends { omit: infer OmitOptions } ? OmitOptions : {}>
+
+  interface TypeMapCb extends $Utils.Fn<{extArgs: $Extensions.InternalArgs}, $Utils.Record<string, any>> {
+    returns: Prisma.TypeMap<this['params']['extArgs']>
   }
 
-  export type TypeMap<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> = {
-    globalOmitOptions: {
-      omit: GlobalOmitOptions
-    }
+  export type TypeMap<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     meta: {
-      modelProps: "todo"
+      modelProps: 'todo'
       txIsolationLevel: Prisma.TransactionIsolationLevel
-    }
+    },
     model: {
       Todo: {
         payload: Prisma.$TodoPayload<ExtArgs>
         fields: Prisma.TodoFieldRefs
         operations: {
           findUnique: {
-            args: Prisma.TodoFindUniqueArgs<ExtArgs>
+            args: Prisma.TodoFindUniqueArgs<ExtArgs>,
             result: $Utils.PayloadToResult<Prisma.$TodoPayload> | null
           }
           findUniqueOrThrow: {
-            args: Prisma.TodoFindUniqueOrThrowArgs<ExtArgs>
+            args: Prisma.TodoFindUniqueOrThrowArgs<ExtArgs>,
             result: $Utils.PayloadToResult<Prisma.$TodoPayload>
           }
           findFirst: {
-            args: Prisma.TodoFindFirstArgs<ExtArgs>
+            args: Prisma.TodoFindFirstArgs<ExtArgs>,
             result: $Utils.PayloadToResult<Prisma.$TodoPayload> | null
           }
           findFirstOrThrow: {
-            args: Prisma.TodoFindFirstOrThrowArgs<ExtArgs>
+            args: Prisma.TodoFindFirstOrThrowArgs<ExtArgs>,
             result: $Utils.PayloadToResult<Prisma.$TodoPayload>
           }
           findMany: {
-            args: Prisma.TodoFindManyArgs<ExtArgs>
+            args: Prisma.TodoFindManyArgs<ExtArgs>,
             result: $Utils.PayloadToResult<Prisma.$TodoPayload>[]
           }
           create: {
-            args: Prisma.TodoCreateArgs<ExtArgs>
+            args: Prisma.TodoCreateArgs<ExtArgs>,
             result: $Utils.PayloadToResult<Prisma.$TodoPayload>
           }
           createMany: {
-            args: Prisma.TodoCreateManyArgs<ExtArgs>
-            result: BatchPayload
-          }
-          createManyAndReturn: {
-            args: Prisma.TodoCreateManyAndReturnArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$TodoPayload>[]
+            args: Prisma.TodoCreateManyArgs<ExtArgs>,
+            result: Prisma.BatchPayload
           }
           delete: {
-            args: Prisma.TodoDeleteArgs<ExtArgs>
+            args: Prisma.TodoDeleteArgs<ExtArgs>,
             result: $Utils.PayloadToResult<Prisma.$TodoPayload>
           }
           update: {
-            args: Prisma.TodoUpdateArgs<ExtArgs>
+            args: Prisma.TodoUpdateArgs<ExtArgs>,
             result: $Utils.PayloadToResult<Prisma.$TodoPayload>
           }
           deleteMany: {
-            args: Prisma.TodoDeleteManyArgs<ExtArgs>
-            result: BatchPayload
+            args: Prisma.TodoDeleteManyArgs<ExtArgs>,
+            result: Prisma.BatchPayload
           }
           updateMany: {
-            args: Prisma.TodoUpdateManyArgs<ExtArgs>
-            result: BatchPayload
-          }
-          updateManyAndReturn: {
-            args: Prisma.TodoUpdateManyAndReturnArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$TodoPayload>[]
+            args: Prisma.TodoUpdateManyArgs<ExtArgs>,
+            result: Prisma.BatchPayload
           }
           upsert: {
-            args: Prisma.TodoUpsertArgs<ExtArgs>
+            args: Prisma.TodoUpsertArgs<ExtArgs>,
             result: $Utils.PayloadToResult<Prisma.$TodoPayload>
           }
           aggregate: {
-            args: Prisma.TodoAggregateArgs<ExtArgs>
+            args: Prisma.TodoAggregateArgs<ExtArgs>,
             result: $Utils.Optional<AggregateTodo>
           }
           groupBy: {
-            args: Prisma.TodoGroupByArgs<ExtArgs>
+            args: Prisma.TodoGroupByArgs<ExtArgs>,
             result: $Utils.Optional<TodoGroupByOutputType>[]
           }
           count: {
-            args: Prisma.TodoCountArgs<ExtArgs>
+            args: Prisma.TodoCountArgs<ExtArgs>,
             result: $Utils.Optional<TodoCountAggregateOutputType> | number
           }
         }
@@ -695,15 +712,11 @@ export namespace Prisma {
     other: {
       payload: any
       operations: {
-        $executeRaw: {
-          args: [query: TemplateStringsArray | Prisma.Sql, ...values: any[]],
-          result: any
-        }
         $executeRawUnsafe: {
           args: [query: string, ...values: any[]],
           result: any
         }
-        $queryRaw: {
+        $executeRaw: {
           args: [query: TemplateStringsArray | Prisma.Sql, ...values: any[]],
           result: any
         }
@@ -711,10 +724,14 @@ export namespace Prisma {
           args: [query: string, ...values: any[]],
           result: any
         }
+        $queryRaw: {
+          args: [query: TemplateStringsArray | Prisma.Sql, ...values: any[]],
+          result: any
+        }
       }
     }
   }
-  export const defineExtension: $Extensions.ExtendsHook<"define", Prisma.TypeMapCb, $Extensions.DefaultArgs>
+  export const defineExtension: $Extensions.ExtendsHook<'define', Prisma.TypeMapCb, $Extensions.DefaultArgs>
   export type DefaultPrismaClient = PrismaClient
   export type ErrorFormat = 'pretty' | 'colorless' | 'minimal'
   export interface PrismaClientOptions {
@@ -757,24 +774,6 @@ export namespace Prisma {
       timeout?: number
       isolationLevel?: Prisma.TransactionIsolationLevel
     }
-    /**
-     * Global configuration for omitting model fields by default.
-     * 
-     * @example
-     * ```
-     * const prisma = new PrismaClient({
-     *   omit: {
-     *     user: {
-     *       password: true
-     *     }
-     *   }
-     * })
-     * ```
-     */
-    omit?: Prisma.GlobalOmitConfig
-  }
-  export type GlobalOmitConfig = {
-    todo?: TodoOmit
   }
 
   /* Types for Logging */
@@ -813,10 +812,8 @@ export namespace Prisma {
     | 'findFirstOrThrow'
     | 'create'
     | 'createMany'
-    | 'createManyAndReturn'
     | 'update'
     | 'updateMany'
-    | 'updateManyAndReturn'
     | 'upsert'
     | 'delete'
     | 'deleteMany'
@@ -895,6 +892,7 @@ export namespace Prisma {
     completed: boolean | null
     isWaiting: boolean | null
     createdAt: Date | null
+    completedAt: Date | null
     dueDate: Date | null
     note: string | null
     quadrant: string | null
@@ -908,6 +906,7 @@ export namespace Prisma {
     completed: boolean | null
     isWaiting: boolean | null
     createdAt: Date | null
+    completedAt: Date | null
     dueDate: Date | null
     note: string | null
     quadrant: string | null
@@ -921,6 +920,7 @@ export namespace Prisma {
     completed: number
     isWaiting: number
     createdAt: number
+    completedAt: number
     dueDate: number
     note: number
     quadrant: number
@@ -944,6 +944,7 @@ export namespace Prisma {
     completed?: true
     isWaiting?: true
     createdAt?: true
+    completedAt?: true
     dueDate?: true
     note?: true
     quadrant?: true
@@ -957,6 +958,7 @@ export namespace Prisma {
     completed?: true
     isWaiting?: true
     createdAt?: true
+    completedAt?: true
     dueDate?: true
     note?: true
     quadrant?: true
@@ -970,6 +972,7 @@ export namespace Prisma {
     completed?: true
     isWaiting?: true
     createdAt?: true
+    completedAt?: true
     dueDate?: true
     note?: true
     quadrant?: true
@@ -1070,6 +1073,7 @@ export namespace Prisma {
     completed: boolean
     isWaiting: boolean
     createdAt: Date
+    completedAt: Date | null
     dueDate: Date | null
     note: string | null
     quadrant: string
@@ -1102,32 +1106,7 @@ export namespace Prisma {
     completed?: boolean
     isWaiting?: boolean
     createdAt?: boolean
-    dueDate?: boolean
-    note?: boolean
-    quadrant?: boolean
-    deleted?: boolean
-    order?: boolean
-  }, ExtArgs["result"]["todo"]>
-
-  export type TodoSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
-    text?: boolean
-    completed?: boolean
-    isWaiting?: boolean
-    createdAt?: boolean
-    dueDate?: boolean
-    note?: boolean
-    quadrant?: boolean
-    deleted?: boolean
-    order?: boolean
-  }, ExtArgs["result"]["todo"]>
-
-  export type TodoSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
-    text?: boolean
-    completed?: boolean
-    isWaiting?: boolean
-    createdAt?: boolean
+    completedAt?: boolean
     dueDate?: boolean
     note?: boolean
     quadrant?: boolean
@@ -1141,6 +1120,7 @@ export namespace Prisma {
     completed?: boolean
     isWaiting?: boolean
     createdAt?: boolean
+    completedAt?: boolean
     dueDate?: boolean
     note?: boolean
     quadrant?: boolean
@@ -1148,7 +1128,6 @@ export namespace Prisma {
     order?: boolean
   }
 
-  export type TodoOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "text" | "completed" | "isWaiting" | "createdAt" | "dueDate" | "note" | "quadrant" | "deleted" | "order", ExtArgs["result"]["todo"]>
 
   export type $TodoPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "Todo"
@@ -1159,6 +1138,7 @@ export namespace Prisma {
       completed: boolean
       isWaiting: boolean
       createdAt: Date
+      completedAt: Date | null
       dueDate: Date | null
       note: string | null
       quadrant: string
@@ -1168,14 +1148,15 @@ export namespace Prisma {
     composites: {}
   }
 
+
   type TodoGetPayload<S extends boolean | null | undefined | TodoDefaultArgs> = $Result.GetResult<Prisma.$TodoPayload, S>
 
-  type TodoCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
-    Omit<TodoFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+  type TodoCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<TodoFindManyArgs, 'select' | 'include' | 'distinct'> & {
       select?: TodoCountAggregateInputType | true
     }
 
-  export interface TodoDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+  export interface TodoDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
     [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['Todo'], meta: { name: 'Todo' } }
     /**
      * Find zero or one Todo that matches the filter.
@@ -1187,12 +1168,14 @@ export namespace Prisma {
      *     // ... provide filter here
      *   }
      * })
-     */
-    findUnique<T extends TodoFindUniqueArgs>(args: SelectSubset<T, TodoFindUniqueArgs<ExtArgs>>): Prisma__TodoClient<$Result.GetResult<Prisma.$TodoPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+    **/
+    findUnique<T extends TodoFindUniqueArgs<ExtArgs>>(
+      args: SelectSubset<T, TodoFindUniqueArgs<ExtArgs>>
+    ): Prisma__TodoClient<$Result.GetResult<Prisma.$TodoPayload<ExtArgs>, T, 'findUnique'> | null, null, ExtArgs>
 
     /**
-     * Find one Todo that matches the filter or throw an error with `error.code='P2025'`
-     * if no matches were found.
+     * Find one Todo that matches the filter or throw an error  with `error.code='P2025'` 
+     *     if no matches were found.
      * @param {TodoFindUniqueOrThrowArgs} args - Arguments to find a Todo
      * @example
      * // Get one Todo
@@ -1201,8 +1184,10 @@ export namespace Prisma {
      *     // ... provide filter here
      *   }
      * })
-     */
-    findUniqueOrThrow<T extends TodoFindUniqueOrThrowArgs>(args: SelectSubset<T, TodoFindUniqueOrThrowArgs<ExtArgs>>): Prisma__TodoClient<$Result.GetResult<Prisma.$TodoPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+    **/
+    findUniqueOrThrow<T extends TodoFindUniqueOrThrowArgs<ExtArgs>>(
+      args?: SelectSubset<T, TodoFindUniqueOrThrowArgs<ExtArgs>>
+    ): Prisma__TodoClient<$Result.GetResult<Prisma.$TodoPayload<ExtArgs>, T, 'findUniqueOrThrow'>, never, ExtArgs>
 
     /**
      * Find the first Todo that matches the filter.
@@ -1216,8 +1201,10 @@ export namespace Prisma {
      *     // ... provide filter here
      *   }
      * })
-     */
-    findFirst<T extends TodoFindFirstArgs>(args?: SelectSubset<T, TodoFindFirstArgs<ExtArgs>>): Prisma__TodoClient<$Result.GetResult<Prisma.$TodoPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+    **/
+    findFirst<T extends TodoFindFirstArgs<ExtArgs>>(
+      args?: SelectSubset<T, TodoFindFirstArgs<ExtArgs>>
+    ): Prisma__TodoClient<$Result.GetResult<Prisma.$TodoPayload<ExtArgs>, T, 'findFirst'> | null, null, ExtArgs>
 
     /**
      * Find the first Todo that matches the filter or
@@ -1232,14 +1219,16 @@ export namespace Prisma {
      *     // ... provide filter here
      *   }
      * })
-     */
-    findFirstOrThrow<T extends TodoFindFirstOrThrowArgs>(args?: SelectSubset<T, TodoFindFirstOrThrowArgs<ExtArgs>>): Prisma__TodoClient<$Result.GetResult<Prisma.$TodoPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+    **/
+    findFirstOrThrow<T extends TodoFindFirstOrThrowArgs<ExtArgs>>(
+      args?: SelectSubset<T, TodoFindFirstOrThrowArgs<ExtArgs>>
+    ): Prisma__TodoClient<$Result.GetResult<Prisma.$TodoPayload<ExtArgs>, T, 'findFirstOrThrow'>, never, ExtArgs>
 
     /**
      * Find zero or more Todos that matches the filter.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {TodoFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @param {TodoFindManyArgs=} args - Arguments to filter and select certain fields only.
      * @example
      * // Get all Todos
      * const todos = await prisma.todo.findMany()
@@ -1250,8 +1239,10 @@ export namespace Prisma {
      * // Only select the `id`
      * const todoWithIdOnly = await prisma.todo.findMany({ select: { id: true } })
      * 
-     */
-    findMany<T extends TodoFindManyArgs>(args?: SelectSubset<T, TodoFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$TodoPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+    **/
+    findMany<T extends TodoFindManyArgs<ExtArgs>>(
+      args?: SelectSubset<T, TodoFindManyArgs<ExtArgs>>
+    ): Prisma.PrismaPromise<$Result.GetResult<Prisma.$TodoPayload<ExtArgs>, T, 'findMany'>>
 
     /**
      * Create a Todo.
@@ -1264,46 +1255,26 @@ export namespace Prisma {
      *   }
      * })
      * 
-     */
-    create<T extends TodoCreateArgs>(args: SelectSubset<T, TodoCreateArgs<ExtArgs>>): Prisma__TodoClient<$Result.GetResult<Prisma.$TodoPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+    **/
+    create<T extends TodoCreateArgs<ExtArgs>>(
+      args: SelectSubset<T, TodoCreateArgs<ExtArgs>>
+    ): Prisma__TodoClient<$Result.GetResult<Prisma.$TodoPayload<ExtArgs>, T, 'create'>, never, ExtArgs>
 
     /**
      * Create many Todos.
-     * @param {TodoCreateManyArgs} args - Arguments to create many Todos.
-     * @example
-     * // Create many Todos
-     * const todo = await prisma.todo.createMany({
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
+     *     @param {TodoCreateManyArgs} args - Arguments to create many Todos.
+     *     @example
+     *     // Create many Todos
+     *     const todo = await prisma.todo.createMany({
+     *       data: {
+     *         // ... provide data here
+     *       }
+     *     })
      *     
-     */
-    createMany<T extends TodoCreateManyArgs>(args?: SelectSubset<T, TodoCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Create many Todos and returns the data saved in the database.
-     * @param {TodoCreateManyAndReturnArgs} args - Arguments to create many Todos.
-     * @example
-     * // Create many Todos
-     * const todo = await prisma.todo.createManyAndReturn({
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * 
-     * // Create many Todos and only return the `id`
-     * const todoWithIdOnly = await prisma.todo.createManyAndReturn({
-     *   select: { id: true },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * 
-     */
-    createManyAndReturn<T extends TodoCreateManyAndReturnArgs>(args?: SelectSubset<T, TodoCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$TodoPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+    **/
+    createMany<T extends TodoCreateManyArgs<ExtArgs>>(
+      args?: SelectSubset<T, TodoCreateManyArgs<ExtArgs>>
+    ): Prisma.PrismaPromise<BatchPayload>
 
     /**
      * Delete a Todo.
@@ -1316,8 +1287,10 @@ export namespace Prisma {
      *   }
      * })
      * 
-     */
-    delete<T extends TodoDeleteArgs>(args: SelectSubset<T, TodoDeleteArgs<ExtArgs>>): Prisma__TodoClient<$Result.GetResult<Prisma.$TodoPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+    **/
+    delete<T extends TodoDeleteArgs<ExtArgs>>(
+      args: SelectSubset<T, TodoDeleteArgs<ExtArgs>>
+    ): Prisma__TodoClient<$Result.GetResult<Prisma.$TodoPayload<ExtArgs>, T, 'delete'>, never, ExtArgs>
 
     /**
      * Update one Todo.
@@ -1333,8 +1306,10 @@ export namespace Prisma {
      *   }
      * })
      * 
-     */
-    update<T extends TodoUpdateArgs>(args: SelectSubset<T, TodoUpdateArgs<ExtArgs>>): Prisma__TodoClient<$Result.GetResult<Prisma.$TodoPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+    **/
+    update<T extends TodoUpdateArgs<ExtArgs>>(
+      args: SelectSubset<T, TodoUpdateArgs<ExtArgs>>
+    ): Prisma__TodoClient<$Result.GetResult<Prisma.$TodoPayload<ExtArgs>, T, 'update'>, never, ExtArgs>
 
     /**
      * Delete zero or more Todos.
@@ -1347,8 +1322,10 @@ export namespace Prisma {
      *   }
      * })
      * 
-     */
-    deleteMany<T extends TodoDeleteManyArgs>(args?: SelectSubset<T, TodoDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+    **/
+    deleteMany<T extends TodoDeleteManyArgs<ExtArgs>>(
+      args?: SelectSubset<T, TodoDeleteManyArgs<ExtArgs>>
+    ): Prisma.PrismaPromise<BatchPayload>
 
     /**
      * Update zero or more Todos.
@@ -1366,38 +1343,10 @@ export namespace Prisma {
      *   }
      * })
      * 
-     */
-    updateMany<T extends TodoUpdateManyArgs>(args: SelectSubset<T, TodoUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Update zero or more Todos and returns the data updated in the database.
-     * @param {TodoUpdateManyAndReturnArgs} args - Arguments to update many Todos.
-     * @example
-     * // Update many Todos
-     * const todo = await prisma.todo.updateManyAndReturn({
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * 
-     * // Update zero or more Todos and only return the `id`
-     * const todoWithIdOnly = await prisma.todo.updateManyAndReturn({
-     *   select: { id: true },
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * 
-     */
-    updateManyAndReturn<T extends TodoUpdateManyAndReturnArgs>(args: SelectSubset<T, TodoUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$TodoPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+    **/
+    updateMany<T extends TodoUpdateManyArgs<ExtArgs>>(
+      args: SelectSubset<T, TodoUpdateManyArgs<ExtArgs>>
+    ): Prisma.PrismaPromise<BatchPayload>
 
     /**
      * Create or update one Todo.
@@ -1415,9 +1364,10 @@ export namespace Prisma {
      *     // ... the filter for the Todo we want to update
      *   }
      * })
-     */
-    upsert<T extends TodoUpsertArgs>(args: SelectSubset<T, TodoUpsertArgs<ExtArgs>>): Prisma__TodoClient<$Result.GetResult<Prisma.$TodoPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
-
+    **/
+    upsert<T extends TodoUpsertArgs<ExtArgs>>(
+      args: SelectSubset<T, TodoUpsertArgs<ExtArgs>>
+    ): Prisma__TodoClient<$Result.GetResult<Prisma.$TodoPayload<ExtArgs>, T, 'upsert'>, never, ExtArgs>
 
     /**
      * Count the number of Todos.
@@ -1556,42 +1506,44 @@ export namespace Prisma {
    * Because we want to prevent naming conflicts as mentioned in
    * https://github.com/prisma/prisma-client-js/issues/707
    */
-  export interface Prisma__TodoClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
-    readonly [Symbol.toStringTag]: "PrismaPromise"
+  export interface Prisma__TodoClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: 'PrismaPromise';
+
+
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
      * @param onrejected The callback to execute when the Promise is rejected.
      * @returns A Promise for the completion of which ever callback is executed.
      */
-    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>;
     /**
      * Attaches a callback for only the rejection of the Promise.
      * @param onrejected The callback to execute when the Promise is rejected.
      * @returns A Promise for the completion of the callback.
      */
-    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>;
     /**
      * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
      * resolved value cannot be modified from the callback.
      * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
      * @returns A Promise for the completion of the callback.
      */
-    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>;
   }
-
 
 
 
   /**
    * Fields of the Todo model
-   */
+   */ 
   interface TodoFieldRefs {
     readonly id: FieldRef<"Todo", 'String'>
     readonly text: FieldRef<"Todo", 'String'>
     readonly completed: FieldRef<"Todo", 'Boolean'>
     readonly isWaiting: FieldRef<"Todo", 'Boolean'>
     readonly createdAt: FieldRef<"Todo", 'DateTime'>
+    readonly completedAt: FieldRef<"Todo", 'DateTime'>
     readonly dueDate: FieldRef<"Todo", 'DateTime'>
     readonly note: FieldRef<"Todo", 'String'>
     readonly quadrant: FieldRef<"Todo", 'String'>
@@ -1601,6 +1553,7 @@ export namespace Prisma {
     
 
   // Custom InputTypes
+
   /**
    * Todo findUnique
    */
@@ -1610,14 +1563,11 @@ export namespace Prisma {
      */
     select?: TodoSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the Todo
-     */
-    omit?: TodoOmit<ExtArgs> | null
-    /**
      * Filter, which Todo to fetch.
      */
     where: TodoWhereUniqueInput
   }
+
 
   /**
    * Todo findUniqueOrThrow
@@ -1628,14 +1578,11 @@ export namespace Prisma {
      */
     select?: TodoSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the Todo
-     */
-    omit?: TodoOmit<ExtArgs> | null
-    /**
      * Filter, which Todo to fetch.
      */
     where: TodoWhereUniqueInput
   }
+
 
   /**
    * Todo findFirst
@@ -1646,10 +1593,6 @@ export namespace Prisma {
      */
     select?: TodoSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the Todo
-     */
-    omit?: TodoOmit<ExtArgs> | null
-    /**
      * Filter, which Todo to fetch.
      */
     where?: TodoWhereInput
@@ -1684,6 +1627,7 @@ export namespace Prisma {
      */
     distinct?: TodoScalarFieldEnum | TodoScalarFieldEnum[]
   }
+
 
   /**
    * Todo findFirstOrThrow
@@ -1694,10 +1638,6 @@ export namespace Prisma {
      */
     select?: TodoSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the Todo
-     */
-    omit?: TodoOmit<ExtArgs> | null
-    /**
      * Filter, which Todo to fetch.
      */
     where?: TodoWhereInput
@@ -1733,6 +1673,7 @@ export namespace Prisma {
     distinct?: TodoScalarFieldEnum | TodoScalarFieldEnum[]
   }
 
+
   /**
    * Todo findMany
    */
@@ -1741,10 +1682,6 @@ export namespace Prisma {
      * Select specific fields to fetch from the Todo
      */
     select?: TodoSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the Todo
-     */
-    omit?: TodoOmit<ExtArgs> | null
     /**
      * Filter, which Todos to fetch.
      */
@@ -1776,6 +1713,7 @@ export namespace Prisma {
     distinct?: TodoScalarFieldEnum | TodoScalarFieldEnum[]
   }
 
+
   /**
    * Todo create
    */
@@ -1785,14 +1723,11 @@ export namespace Prisma {
      */
     select?: TodoSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the Todo
-     */
-    omit?: TodoOmit<ExtArgs> | null
-    /**
      * The data needed to create a Todo.
      */
     data: XOR<TodoCreateInput, TodoUncheckedCreateInput>
   }
+
 
   /**
    * Todo createMany
@@ -1805,24 +1740,6 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
-  /**
-   * Todo createManyAndReturn
-   */
-  export type TodoCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the Todo
-     */
-    select?: TodoSelectCreateManyAndReturn<ExtArgs> | null
-    /**
-     * Omit specific fields from the Todo
-     */
-    omit?: TodoOmit<ExtArgs> | null
-    /**
-     * The data used to create many Todos.
-     */
-    data: TodoCreateManyInput | TodoCreateManyInput[]
-    skipDuplicates?: boolean
-  }
 
   /**
    * Todo update
@@ -1833,10 +1750,6 @@ export namespace Prisma {
      */
     select?: TodoSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the Todo
-     */
-    omit?: TodoOmit<ExtArgs> | null
-    /**
      * The data needed to update a Todo.
      */
     data: XOR<TodoUpdateInput, TodoUncheckedUpdateInput>
@@ -1845,6 +1758,7 @@ export namespace Prisma {
      */
     where: TodoWhereUniqueInput
   }
+
 
   /**
    * Todo updateMany
@@ -1858,37 +1772,8 @@ export namespace Prisma {
      * Filter which Todos to update
      */
     where?: TodoWhereInput
-    /**
-     * Limit how many Todos to update.
-     */
-    limit?: number
   }
 
-  /**
-   * Todo updateManyAndReturn
-   */
-  export type TodoUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the Todo
-     */
-    select?: TodoSelectUpdateManyAndReturn<ExtArgs> | null
-    /**
-     * Omit specific fields from the Todo
-     */
-    omit?: TodoOmit<ExtArgs> | null
-    /**
-     * The data used to update Todos.
-     */
-    data: XOR<TodoUpdateManyMutationInput, TodoUncheckedUpdateManyInput>
-    /**
-     * Filter which Todos to update
-     */
-    where?: TodoWhereInput
-    /**
-     * Limit how many Todos to update.
-     */
-    limit?: number
-  }
 
   /**
    * Todo upsert
@@ -1898,10 +1783,6 @@ export namespace Prisma {
      * Select specific fields to fetch from the Todo
      */
     select?: TodoSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the Todo
-     */
-    omit?: TodoOmit<ExtArgs> | null
     /**
      * The filter to search for the Todo to update in case it exists.
      */
@@ -1916,6 +1797,7 @@ export namespace Prisma {
     update: XOR<TodoUpdateInput, TodoUncheckedUpdateInput>
   }
 
+
   /**
    * Todo delete
    */
@@ -1925,14 +1807,11 @@ export namespace Prisma {
      */
     select?: TodoSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the Todo
-     */
-    omit?: TodoOmit<ExtArgs> | null
-    /**
      * Filter which Todo to delete.
      */
     where: TodoWhereUniqueInput
   }
+
 
   /**
    * Todo deleteMany
@@ -1942,11 +1821,8 @@ export namespace Prisma {
      * Filter which Todos to delete
      */
     where?: TodoWhereInput
-    /**
-     * Limit how many Todos to delete.
-     */
-    limit?: number
   }
+
 
   /**
    * Todo without action
@@ -1956,11 +1832,8 @@ export namespace Prisma {
      * Select specific fields to fetch from the Todo
      */
     select?: TodoSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the Todo
-     */
-    omit?: TodoOmit<ExtArgs> | null
   }
+
 
 
   /**
@@ -1983,6 +1856,7 @@ export namespace Prisma {
     completed: 'completed',
     isWaiting: 'isWaiting',
     createdAt: 'createdAt',
+    completedAt: 'completedAt',
     dueDate: 'dueDate',
     note: 'note',
     quadrant: 'quadrant',
@@ -2018,7 +1892,7 @@ export namespace Prisma {
 
 
   /**
-   * Field references
+   * Field references 
    */
 
 
@@ -2097,6 +1971,7 @@ export namespace Prisma {
     completed?: BoolFilter<"Todo"> | boolean
     isWaiting?: BoolFilter<"Todo"> | boolean
     createdAt?: DateTimeFilter<"Todo"> | Date | string
+    completedAt?: DateTimeNullableFilter<"Todo"> | Date | string | null
     dueDate?: DateTimeNullableFilter<"Todo"> | Date | string | null
     note?: StringNullableFilter<"Todo"> | string | null
     quadrant?: StringFilter<"Todo"> | string
@@ -2110,6 +1985,7 @@ export namespace Prisma {
     completed?: SortOrder
     isWaiting?: SortOrder
     createdAt?: SortOrder
+    completedAt?: SortOrderInput | SortOrder
     dueDate?: SortOrderInput | SortOrder
     note?: SortOrderInput | SortOrder
     quadrant?: SortOrder
@@ -2126,6 +2002,7 @@ export namespace Prisma {
     completed?: BoolFilter<"Todo"> | boolean
     isWaiting?: BoolFilter<"Todo"> | boolean
     createdAt?: DateTimeFilter<"Todo"> | Date | string
+    completedAt?: DateTimeNullableFilter<"Todo"> | Date | string | null
     dueDate?: DateTimeNullableFilter<"Todo"> | Date | string | null
     note?: StringNullableFilter<"Todo"> | string | null
     quadrant?: StringFilter<"Todo"> | string
@@ -2139,6 +2016,7 @@ export namespace Prisma {
     completed?: SortOrder
     isWaiting?: SortOrder
     createdAt?: SortOrder
+    completedAt?: SortOrderInput | SortOrder
     dueDate?: SortOrderInput | SortOrder
     note?: SortOrderInput | SortOrder
     quadrant?: SortOrder
@@ -2160,6 +2038,7 @@ export namespace Prisma {
     completed?: BoolWithAggregatesFilter<"Todo"> | boolean
     isWaiting?: BoolWithAggregatesFilter<"Todo"> | boolean
     createdAt?: DateTimeWithAggregatesFilter<"Todo"> | Date | string
+    completedAt?: DateTimeNullableWithAggregatesFilter<"Todo"> | Date | string | null
     dueDate?: DateTimeNullableWithAggregatesFilter<"Todo"> | Date | string | null
     note?: StringNullableWithAggregatesFilter<"Todo"> | string | null
     quadrant?: StringWithAggregatesFilter<"Todo"> | string
@@ -2173,6 +2052,7 @@ export namespace Prisma {
     completed: boolean
     isWaiting: boolean
     createdAt?: Date | string
+    completedAt?: Date | string | null
     dueDate?: Date | string | null
     note?: string | null
     quadrant: string
@@ -2186,6 +2066,7 @@ export namespace Prisma {
     completed: boolean
     isWaiting: boolean
     createdAt?: Date | string
+    completedAt?: Date | string | null
     dueDate?: Date | string | null
     note?: string | null
     quadrant: string
@@ -2199,6 +2080,7 @@ export namespace Prisma {
     completed?: BoolFieldUpdateOperationsInput | boolean
     isWaiting?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     dueDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     note?: NullableStringFieldUpdateOperationsInput | string | null
     quadrant?: StringFieldUpdateOperationsInput | string
@@ -2212,6 +2094,7 @@ export namespace Prisma {
     completed?: BoolFieldUpdateOperationsInput | boolean
     isWaiting?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     dueDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     note?: NullableStringFieldUpdateOperationsInput | string | null
     quadrant?: StringFieldUpdateOperationsInput | string
@@ -2225,6 +2108,7 @@ export namespace Prisma {
     completed: boolean
     isWaiting: boolean
     createdAt?: Date | string
+    completedAt?: Date | string | null
     dueDate?: Date | string | null
     note?: string | null
     quadrant: string
@@ -2238,6 +2122,7 @@ export namespace Prisma {
     completed?: BoolFieldUpdateOperationsInput | boolean
     isWaiting?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     dueDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     note?: NullableStringFieldUpdateOperationsInput | string | null
     quadrant?: StringFieldUpdateOperationsInput | string
@@ -2251,6 +2136,7 @@ export namespace Prisma {
     completed?: BoolFieldUpdateOperationsInput | boolean
     isWaiting?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     dueDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     note?: NullableStringFieldUpdateOperationsInput | string | null
     quadrant?: StringFieldUpdateOperationsInput | string
@@ -2342,6 +2228,7 @@ export namespace Prisma {
     completed?: SortOrder
     isWaiting?: SortOrder
     createdAt?: SortOrder
+    completedAt?: SortOrder
     dueDate?: SortOrder
     note?: SortOrder
     quadrant?: SortOrder
@@ -2359,6 +2246,7 @@ export namespace Prisma {
     completed?: SortOrder
     isWaiting?: SortOrder
     createdAt?: SortOrder
+    completedAt?: SortOrder
     dueDate?: SortOrder
     note?: SortOrder
     quadrant?: SortOrder
@@ -2372,6 +2260,7 @@ export namespace Prisma {
     completed?: SortOrder
     isWaiting?: SortOrder
     createdAt?: SortOrder
+    completedAt?: SortOrder
     dueDate?: SortOrder
     note?: SortOrder
     quadrant?: SortOrder
@@ -2699,6 +2588,14 @@ export namespace Prisma {
   }
 
 
+
+  /**
+   * Aliases for legacy arg types
+   */
+    /**
+     * @deprecated Use TodoDefaultArgs instead
+     */
+    export type TodoArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = TodoDefaultArgs<ExtArgs>
 
   /**
    * Batch Payload for updateMany & deleteMany & createMany

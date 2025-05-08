@@ -60,7 +60,7 @@ export function TodoList() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (newTodo.trim()) {
-      addTodo(newTodo.trim());
+      addTodo(newTodo.trim(), 'inbox');
       setNewTodo("");
     }
   };
@@ -84,17 +84,17 @@ export function TodoList() {
               value={newTodo}
               onChange={(e) => setNewTodo(e.target.value)}
               placeholder="Add a new task..."
-              className="flex-1 px-4 py-2 pb-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="border  border-gray-400 flex-1 px-4 py-2 pb-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
               autoFocus
             />
             <button
               type="submit"
-              className="px-4 py-2 pb-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-4 py-2 pb-2 bg-red-500 text-white font-bold rounded-full hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              Add
+              ADD
             </button>
           </div>
-          <div className="border-b border-gray-200 bg-white/50 mt-2" />
+          <div className="border-b border-gray-400 bg-white/50 mt-2" />
         </form>
       </div>
 

@@ -127,7 +127,7 @@ export function Modal({
       {/* Modal */}
       <div
         ref={modalRef}
-        className={`rounded-lg shadow-xl border min-w-[300px] mb-4 ${backgroundClassName} ${className}`}
+        className={`rounded-lg shadow-[0_20px_50px_rgba(0,_0,_0,_0.5)] border min-w-[300px] mb-4 ${backgroundClassName} ${className}`}
         style={modalStyle}
       >
         {/* Header */}

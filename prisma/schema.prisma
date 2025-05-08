@@ -6,7 +6,6 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../src/generated/prisma"
 }
 
 datasource db {
@@ -20,6 +19,7 @@ model Todo {
   completed         Boolean
   isWaiting         Boolean
   createdAt         DateTime @default(now())
+  completedAt       DateTime?  // optional timestamp for when the todo was completed
   dueDate           DateTime?  // optional
   note              String?    // optional
   quadrant          String

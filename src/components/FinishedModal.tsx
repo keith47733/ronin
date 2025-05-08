@@ -148,7 +148,7 @@ export default function FinishedModal({
             quadrantId="finished"
           />
           {finished.length === 0 && (
-            <div className="text-gray-500 text-sm font-karla self-start mt-2 mb-4 px-4">
+            <div className="text-gray-500 text-sm font-karla self-start mx-2">
               No finished tasks yet...
             </div>
           )}

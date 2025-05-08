@@ -11,6 +11,8 @@ import {
   useSensor,
   useSensors,
   DragOverlay,
+  DragEndEvent,
+  DragStartEvent,
 } from "@dnd-kit/core";
 import {
   arrayMove,
@@ -142,18 +144,18 @@ export default function Home() {
       {/* Overlay for the dragged todo card */}
       <DragOverlay dropAnimation={null}>
         {activeTodo ? (
-          <div className="bg-white rounded overflow-hidden px-2">
+          <div className="bg-white rounded overflow-hidden">
             <TodoItem
               todo={activeTodo}
               quadrant={getQuadrantByTodoId(activeTodo.id) || "inbox"}
               onDragStart={() => () => {}}
-              onDragEnd={() => {} }
-              onDrop={() => {} }
-              onDragOver={() => {} }
-              onDragLeave={() => {} }
-              onDelete={() => {} }
-              onUpdateText={() => {} }
-              isOverlay
+              onDragEnd={() => {}}
+              onDrop={() => {}}
+              onDragOver={() => {}}
+              onDragLeave={() => {}}
+              onDelete={() => {}}
+              onUpdateText={() => {}}
+              isOverlay={true}
             />
           </div>
         ) : null}

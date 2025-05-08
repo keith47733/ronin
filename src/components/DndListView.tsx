@@ -33,14 +33,13 @@ function SortableItem({ todo, renderItem }: { todo: Todo; renderItem: (todo: Tod
     setNodeRef,
     transform,
     transition,
-    isDragging,
+    isDragging
   } = useSortable({ id: todo.id });
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    zIndex: isDragging ? 50 : 1,
-    opacity: isDragging ? 0.3 : 1,
+    opacity: isDragging ? 0.5 : 1,
   };
 
   return (

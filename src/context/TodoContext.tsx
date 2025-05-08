@@ -10,6 +10,8 @@ import React, {
 } from "react";
 import { Todo, QuadrantKey } from "@/types/todo";
 import { useModal } from "@/context/ModalContext";
+import { apiClient } from '@/lib/api';
+import { ApiException, ApiResponse } from '@/types/api';
 
 /**
  * Core state management for the Todo application
@@ -25,24 +27,20 @@ import { useModal } from "@/context/ModalContext";
 interface TodoContextType {
   quadrants: Record<QuadrantKey, Todo[]>; // Active todos organized by quadrant
   finished: Todo[]; // Completed todos in the finished list
-  addTodo: (text: string) => void;
-  deleteTodo: (id: string) => void;
-  permanentlyDeleteTodo: (id: string) => void;
-  restoreTodo: (id: string) => void;
-  toggleTodo: (id: string) => void;
-  toggleWaiting: (id: string) => void;
-  updateTodoText: (id: string, text: string) => void;
-  updateTodoDueDate: (id: string, date: Date | undefined) => void;
-  updateTodoNote: (id: string, note: string) => void;
-  moveTodo: (
-    todo: Todo,
-    fromQuadrant: QuadrantKey,
-    toQuadrant: QuadrantKey
-  ) => void;
-  reorderTodo: (todoId: string, toQuadrant: QuadrantKey, toIndex: number) => void;
-  reorderTodosInQuadrant: (quadrant: QuadrantKey, newOrder: Todo[]) => void;
-  pendingMove: { todoId: string, toQuadrant: QuadrantKey } | null;
-  setPendingMove: (move: { todoId: string, toQuadrant: QuadrantKey } | null) => void;
+  addTodo: (text: string, quadrant: QuadrantKey) => Promise<void>;
+  deleteTodo: (id: string) => Promise<void>;
+  permanentlyDeleteTodo: (id: string) => Promise<void>;
+  restoreTodo: (id: string) => Promise<void>;
+  toggleTodo: (id: string) => Promise<void>;
+  toggleWaiting: (id: string) => Promise<void>;
+  updateTodoText: (id: string, text: string) => Promise<void>;
+  updateTodoDueDate: (id: string, date: Date | null) => Promise<void>;
+  updateTodoNote: (id: string, note: string | null) => Promise<void>;
+  moveTodo: (todo: Todo, fromQuadrant: QuadrantKey, toQuadrant: QuadrantKey) => Promise<void>;
+  reorderTodo: (id: string, newOrder: number) => Promise<void>;
+  reorderTodosInQuadrant: (quadrant: QuadrantKey, todos: Todo[]) => Promise<void>;
+  pendingMove: { todoId: string; toQuadrant: QuadrantKey } | null;
+  setPendingMove: (move: { todoId: string; toQuadrant: QuadrantKey } | null) => void;
   setTodos: React.Dispatch<React.SetStateAction<Todo[]>>;
 }
 
@@ -90,7 +88,7 @@ function serializeTodos(todos: Todo[]): any[] {
   return todos.map((todo) => ({
     ...todo,
     createdAt: todo.createdAt instanceof Date ? todo.createdAt.toISOString() : todo.createdAt,
-    dueDate: todo.dueDate instanceof Date ? todo.dueDate.toISOString() : todo.dueDate || undefined,
+    dueDate: todo.dueDate instanceof Date ? todo.dueDate.toISOString() : todo.dueDate || null,
   }));
 }
 
@@ -102,7 +100,7 @@ function deserializeTodos(raw: any[]): Todo[] {
       const deserialized = {
         ...todo,
         createdAt: todo.createdAt ? new Date(todo.createdAt) : new Date(),
-        dueDate: todo.dueDate ? new Date(todo.dueDate) : undefined,
+        dueDate: todo.dueDate ? new Date(todo.dueDate) : null,
       };
       // Basic validation: must have id and text
       if (deserialized.id && deserialized.text) {
@@ -155,273 +153,423 @@ export function TodoProvider({ children, initialTodos = [] }: { children: React.
 
   // Track a pending move for robust cross-quadrant and finished/quadrant ordering
   // Used for drag-and-drop, finishing, and restoring
-  const [pendingMove, setPendingMove] = useState<{ todoId: string, toQuadrant: QuadrantKey } | null>(null);
+  const [pendingMove, setPendingMove] = useState<{ todoId: string; toQuadrant: QuadrantKey } | null>(null);
 
-  // Add todo via API
-  /**
-   * Adds a new todo and ensures it is appended to the end of its quadrant.
-   * - After adding, reorders the quadrant to ensure the new todo is last and order fields are correct.
-   * - Scrolls the inbox listview to show the new item (handled in the component).
-   */
-  const addTodo = useCallback(async (text: string) => {
-    if (!text.trim()) return;
-    const res = await fetch('/api/todos', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text }),
-    });
-    const newTodo = await res.json();
+  // Helper function to update todos optimistically
+  const updateTodosOptimistically = useCallback((updater: (prev: Todo[]) => Todo[]) => {
     setTodos(prev => {
-      // Remove any accidental duplicate (shouldn't happen, but for safety)
-      const filtered = prev.filter(t => t.id !== newTodo.id);
-      // Find all todos in the new todo's quadrant
-      const quadrantTodos = filtered.filter(t => t.quadrant === newTodo.quadrant && !t.completed);
-      const others = filtered.filter(t => t.quadrant !== newTodo.quadrant || t.completed);
-      const newQuadrant = addAndReorder(quadrantTodos, newTodo);
-      const updates = newQuadrant.map((t, idx) => ({ id: t.id, order: idx }));
-      fetch('/api/todos', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ updates }),
-      });
-      return [...others, ...newQuadrant];
+      const updated = updater(prev);
+      return updated;
     });
-    setPendingMove({ todoId: newTodo.id, toQuadrant: 'inbox' });
   }, []);
 
-  // Update todo via API
-  const updateTodo = useCallback(async (updated: Todo) => {
-    const res = await fetch('/api/todos', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updated),
-    });
-    const todo = await res.json();
-    setTodos(prev => prev.map(t => t.id === todo.id ? todo : t));
+  // Helper function to handle API errors
+  const handleApiError = useCallback((error: unknown) => {
+    if (error instanceof ApiException) {
+      console.error(`API Error: ${error.code} - ${error.message}`);
+    } else {
+      console.error('Unexpected error:', error);
+    }
+    // Revert optimistic update on error
+    setTodos(prev => [...prev]);
   }, []);
 
-  // Delete todo via API
-  const deleteTodo = useCallback(async (id: string) => {
-    await fetch('/api/todos', {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id }),
-    });
-    setTodos(prev => prev.filter(t => t.id !== id));
-  }, []);
+  // Helper function to standardize optimistic updates
+  const performOptimisticUpdate = useCallback(function<T>(
+    optimisticUpdater: (prev: Todo[]) => Todo[],
+    apiCall: () => Promise<ApiResponse<T>>,
+    onSuccess?: (data: T) => void
+  ): Promise<void> {
+    return (async () => {
+      try {
+        // 1. Perform optimistic update
+        updateTodosOptimistically(optimisticUpdater);
 
-  // Mark as completed (finished)
-  /**
-   * Marks a todo as completed (finished).
-   * - Removes from all lists, then inserts as the first item in the finished list, reorders and persists.
-   * - Existing finished tasks are bumped down.
-   * - Scrolls finished listview to show new item (handled in FinishedModal).
-   */
+        // 2. Make API call
+        const response = await apiCall();
+
+        // 3. Handle API error
+        if (response.error) {
+          throw new ApiException(response.error.code, response.error.message);
+        }
+
+        // 4. Handle success
+        if (onSuccess && response.data) {
+          onSuccess(response.data);
+        }
+      } catch (error) {
+        handleApiError(error);
+      }
+    })();
+  }, [updateTodosOptimistically, handleApiError]);
+
+  // Add todo
+  const addTodo = useCallback(async (text: string, quadrant: QuadrantKey) => {
+    const tempId = `temp-${Date.now()}`;
+    const now = new Date();
+    const newTodo: Todo = {
+      id: tempId,
+      text,
+      quadrant,
+      completed: false,
+      isWaiting: false,
+      createdAt: now,
+      order: todos.filter(t => t.quadrant === quadrant).length,
+      dueDate: null,
+      note: null,
+      completedAt: null,
+      deleted: null
+    };
+
+    await performOptimisticUpdate<Todo>(
+      // Optimistic update
+      prev => [...prev, newTodo],
+      // API call
+      () => apiClient.createTodo({
+        text,
+        quadrant,
+        completed: false,
+        isWaiting: false,
+        order: todos.filter(t => t.quadrant === quadrant).length,
+        dueDate: null,
+        note: null,
+        completedAt: null,
+        deleted: null
+      }),
+      // Success handler
+      (data) => updateTodosOptimistically(prev => 
+        prev.map(t => t.id === tempId ? data : t)
+      )
+    );
+  }, [todos, performOptimisticUpdate]);
+
+  // Mark as completed
   const markCompleted = useCallback(async (id: string) => {
-    setTodos(prev => {
-      const todo = prev.find(t => t.id === id);
-      if (!todo) return prev;
-      // Remove from all lists
-      const filtered = prev.filter(t => t.id !== id);
-      // Get all finished tasks and bump their order by 1
-      const finished = filtered.filter(t => t.completed).map(t => ({ ...t, order: t.order + 1 }));
-      const others = filtered.filter(t => !t.completed);
-      // Set the new finished task's order to 0
-      const newFinishedTask = { ...todo, completed: true, order: 0 };
-      // Prepend the new finished task (no sort)
-      const newFinished = [newFinishedTask, ...finished];
-      // Assign correct order values in state
-      const newFinishedWithOrder = newFinished.map((t, idx) => ({ ...t, order: idx }));
-      // Persist new order for finished list
-      fetch('/api/todos', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ updates: newFinishedWithOrder.map((t, idx) => ({ id: t.id, order: idx })) }),
-      });
-      return [...others, ...newFinishedWithOrder];
-    });
-    setPendingMove({ todoId: id, toQuadrant: 'finished' });
-  }, [setTodos, setPendingMove]);
+    const todo = todos.find(t => t.id === id);
+    if (!todo) return;
 
-  // Restore a finished todo
-  /**
-   * Restores a finished todo to its quadrant.
-   * - Removes from all lists, then adds to end of destination quadrant, reorders and persists.
-   * - Scrolls destination listview to show new item (handled in Quadrant).
-   */
+    const completedAt = new Date().toISOString();
+
+    await performOptimisticUpdate<Todo>(
+      // Optimistic update
+      prev => {
+        const filtered = prev.filter(t => t.id !== id);
+        const finished = filtered.filter(t => t.completed);
+        const others = filtered.filter(t => !t.completed);
+        const newFinishedTask = { ...todo, completed: true, completedAt };
+        const newFinished = [newFinishedTask, ...finished].sort((a, b) => {
+          const timeA = a.completedAt || '0';
+          const timeB = b.completedAt || '0';
+          return timeB.localeCompare(timeA);
+        });
+        return [...others, ...newFinished];
+      },
+      // API call
+      () => apiClient.updateTodo({
+        ...todo,
+        completed: true,
+        completedAt
+      }),
+      // Success handler
+      () => setPendingMove({ todoId: id, toQuadrant: 'finished' })
+    );
+  }, [todos, performOptimisticUpdate]);
+
+  // Mark as waiting
+  const markWaiting = useCallback(async (id: string) => {
+    const todo = todos.find(t => t.id === id);
+    if (!todo) return;
+
+    await performOptimisticUpdate<Todo>(
+      // Optimistic update
+      prev => prev.map(t => t.id === id ? { ...t, isWaiting: true } : t),
+      // API call
+      () => apiClient.updateTodo({
+        ...todo,
+        isWaiting: true
+      })
+    );
+  }, [todos, performOptimisticUpdate]);
+
+  // Mark as not waiting
+  const markNotWaiting = useCallback(async (id: string) => {
+    const todo = todos.find(t => t.id === id);
+    if (!todo) return;
+
+    await performOptimisticUpdate<Todo>(
+      // Optimistic update
+      prev => prev.map(t => t.id === id ? { ...t, isWaiting: false } : t),
+      // API call
+      () => apiClient.updateTodo({
+        ...todo,
+        isWaiting: false
+      })
+    );
+  }, [todos, performOptimisticUpdate]);
+
+  // Delete todo
+  const deleteTodo = useCallback(async (id: string) => {
+    const todo = todos.find(t => t.id === id);
+    if (!todo) return;
+
+    await performOptimisticUpdate<void>(
+      // Optimistic update
+      prev => prev.filter(t => t.id !== id),
+      // API call
+      () => apiClient.deleteTodo(id)
+    );
+  }, [todos, performOptimisticUpdate]);
+
+  // Restore todo
   const restoreTodo = useCallback(async (id: string) => {
     const todo = todos.find(t => t.id === id);
-    if (todo) {
-      await updateTodo({ ...todo, completed: false });
-      setTodos(prev => {
-        // Remove the todo from all lists (to prevent duplicates)
+    if (!todo) return;
+
+    // Calculate new order based on the number of todos in the target quadrant
+    const quadrantTodos = todos.filter(t => t.quadrant === todo.quadrant && !t.completed);
+    const newOrder = quadrantTodos.length;
+
+    await performOptimisticUpdate<Todo>(
+      // Optimistic update
+      prev => {
         const filtered = prev.filter(t => t.id !== id);
-        // Add to end of destination quadrant and reorder
         const quadrantTodos = filtered.filter(t => t.quadrant === todo.quadrant && !t.completed);
         const others = filtered.filter(t => t.quadrant !== todo.quadrant || t.completed);
-        const newQuadrant = addAndReorder(quadrantTodos, { ...todo, completed: false });
-        // Persist destination list
-        fetch('/api/todos', {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ updates: newQuadrant.map((t, idx) => ({ id: t.id, order: idx })) }),
-        });
-        return [...others, ...newQuadrant];
-      });
-      setPendingMove({ todoId: todo.id, toQuadrant: todo.quadrant });
-    }
-  }, [todos, updateTodo]);
+        const restoredTodo = { 
+          ...todo, 
+          deleted: false,
+          completed: false,
+          completedAt: null,
+          order: newOrder
+        };
+        return [...others, ...quadrantTodos, restoredTodo];
+      },
+      // API call
+      () => apiClient.updateTodo({
+        ...todo,
+        deleted: false,
+        completed: false,
+        completedAt: null,
+        order: newOrder
+      })
+    );
+  }, [todos, performOptimisticUpdate]);
 
   // Toggle completion
   const toggleTodo = useCallback(async (id: string) => {
-    const todo = todos.find(t => t.id === id);
-    if (todo) {
-      await updateTodo({ ...todo, completed: !todo.completed });
+    try {
+      const todo = todos.find(t => t.id === id);
+      if (!todo) return;
+
+      const isCompleting = !todo.completed;
+      const completedAt = isCompleting ? new Date().toISOString() : null;
+
+      // Optimistic update
+      updateTodosOptimistically(prev =>
+        prev.map(t => t.id === id ? { ...t, completed: isCompleting, completedAt } : t)
+      );
+
+      const response = await apiClient.updateTodo({
+        ...todo,
+        completed: isCompleting,
+        completedAt,
+      });
+
+      if (response.error) {
+        throw new ApiException(response.error.code, response.error.message);
+      }
+    } catch (error) {
+      handleApiError(error);
     }
-  }, [todos, updateTodo]);
+  }, [todos, updateTodosOptimistically, handleApiError]);
 
   // Toggle waiting
   const toggleWaiting = useCallback(async (id: string) => {
-    const todo = todos.find(t => t.id === id);
-    if (todo) {
-      await updateTodo({ ...todo, isWaiting: !todo.isWaiting });
+    try {
+      const todo = todos.find(t => t.id === id);
+      if (!todo) return;
+
+      // Optimistic update
+      updateTodosOptimistically(prev =>
+        prev.map(t => t.id === id ? { ...t, isWaiting: !t.isWaiting } : t)
+      );
+
+      const response = await apiClient.updateTodo({
+        ...todo,
+        isWaiting: !todo.isWaiting,
+      });
+
+      if (response.error) {
+        throw new ApiException(response.error.code, response.error.message);
+      }
+    } catch (error) {
+      handleApiError(error);
     }
-  }, [todos, updateTodo]);
+  }, [todos, updateTodosOptimistically, handleApiError]);
 
   // Update text
   const updateTodoText = useCallback(async (id: string, text: string) => {
     if (!text.trim()) return;
-    const todo = todos.find(t => t.id === id);
-    if (todo) {
-      await updateTodo({ ...todo, text });
+    try {
+      const todo = todos.find(t => t.id === id);
+      if (!todo) return;
+
+      // Optimistic update
+      updateTodosOptimistically(prev =>
+        prev.map(t => t.id === id ? { ...t, text } : t)
+      );
+
+      const response = await apiClient.updateTodo({
+        id,
+        text,
+      });
+
+      if (response.error) {
+        throw new ApiException(response.error.code, response.error.message);
+      }
+    } catch (error) {
+      handleApiError(error);
     }
-  }, [todos, updateTodo]);
+  }, [todos, updateTodosOptimistically, handleApiError]);
 
   // Update due date
-  const updateTodoDueDate = useCallback(async (id: string, date: Date | undefined) => {
-    const todo = todos.find(t => t.id === id);
-    if (todo) {
-      await updateTodo({ ...todo, dueDate: date });
+  const updateTodoDueDate = useCallback(async (id: string, date: Date | null) => {
+    try {
+      const todo = todos.find(t => t.id === id);
+      if (!todo) return;
+
+      // Optimistic update
+      updateTodosOptimistically(prev =>
+        prev.map(t => t.id === id ? { ...t, dueDate: date } : t)
+      );
+
+      const response = await apiClient.updateTodo({
+        ...todo,
+        dueDate: date,
+      });
+
+      if (response.error) {
+        throw new ApiException(response.error.code, response.error.message);
+      }
+    } catch (error) {
+      handleApiError(error);
     }
-  }, [todos, updateTodo]);
+  }, [todos, updateTodosOptimistically, handleApiError]);
 
   // Update note
-  const updateTodoNote = useCallback(async (id: string, note: string) => {
-    const todo = todos.find(t => t.id === id);
-    if (todo) {
-      await updateTodo({ ...todo, note });
-    }
-  }, [todos, updateTodo]);
+  const updateTodoNote = useCallback(async (id: string, note: string | null) => {
+    try {
+      const todo = todos.find(t => t.id === id);
+      if (!todo) return;
 
-  // Move todo between quadrants
-  /**
-   * Moves a todo to a different quadrant (drag-and-drop or programmatic move).
-   * - Removes from all lists, then adds to end of destination quadrant, reorders and persists.
-   * - Scrolls destination listview to show new item (handled in Quadrant).
-   */
-  const moveTodo = useCallback(async (todo: Todo, fromQuadrant: QuadrantKey, toQuadrant: QuadrantKey) => {
-    if (todo.quadrant !== toQuadrant) {
-      await updateTodo({ ...todo, quadrant: toQuadrant });
-      setTodos(prev => {
-        // Remove the todo from all lists (to prevent duplicates)
-        const filtered = prev.filter(t => t.id !== todo.id);
-        // Add to end of destination quadrant and reorder
-        const destQuadrant = filtered.filter(t => t.quadrant === toQuadrant && !t.completed);
-        const others = filtered.filter(t => t.quadrant !== toQuadrant || t.completed);
-        const newDest = addAndReorder(destQuadrant, { ...todo, quadrant: toQuadrant });
-        // Persist destination list
-        fetch('/api/todos', {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ updates: newDest.map((t, idx) => ({ id: t.id, order: idx })) }),
-        });
-        return [...others, ...newDest];
+      // Optimistic update
+      updateTodosOptimistically(prev =>
+        prev.map(t => t.id === id ? { ...t, note } : t)
+      );
+
+      const response = await apiClient.updateTodo({
+        ...todo,
+        note,
       });
-      setPendingMove({ todoId: todo.id, toQuadrant });
-    }
-  }, [updateTodo]);
 
-  /**
-   * Permanently deletes a todo.
-   * - Removes from all lists, reorders the remaining tasks in the same quadrant, and persists the new order.
-   */
-  const permanentlyDeleteTodo = useCallback(async (id: string) => {
-    // Find the todo to get its quadrant
+      if (response.error) {
+        throw new ApiException(response.error.code, response.error.message);
+      }
+    } catch (error) {
+      handleApiError(error);
+    }
+  }, [todos, updateTodosOptimistically, handleApiError]);
+
+  // Move todo
+  const moveTodo = useCallback(async (todo: Todo, fromQuadrant: QuadrantKey, toQuadrant: QuadrantKey) => {
+    await performOptimisticUpdate<Todo>(
+      // Optimistic update
+      prev => {
+        const filtered = prev.filter(t => t.id !== todo.id);
+        const quadrantTodos = filtered.filter(t => t.quadrant === toQuadrant);
+        const others = filtered.filter(t => t.quadrant !== toQuadrant);
+        const newQuadrant = [...quadrantTodos, { ...todo, quadrant: toQuadrant }];
+        return [...others, ...newQuadrant];
+      },
+      // API call
+      () => apiClient.updateTodo({
+        ...todo,
+        quadrant: toQuadrant,
+      }),
+      // Success handler
+      () => setPendingMove({ todoId: todo.id, toQuadrant })
+    );
+  }, [performOptimisticUpdate]);
+
+  // Reorder todo
+  const reorderTodo = useCallback(async (id: string, newOrder: number) => {
     const todo = todos.find(t => t.id === id);
     if (!todo) return;
-    await fetch('/api/todos', {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id }),
-    });
-    setTodos(prev => {
-      // Remove from all lists
-      const filtered = prev.filter(t => t.id !== id);
-      // Reorder the remaining tasks in the same quadrant
-      const quadrantTodos = filtered.filter(t => t.quadrant === todo.quadrant && !t.completed);
-      const others = filtered.filter(t => t.quadrant !== todo.quadrant || t.completed);
-      const reordered = quadrantTodos.map((t, idx) => ({ ...t, order: idx }));
-      // Persist new order
-      fetch('/api/todos', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ updates: reordered.map((t, idx) => ({ id: t.id, order: idx })) }),
-      });
-      return [...others, ...reordered];
-    });
-  }, [todos]);
 
-  // Reorder todo (persisted to DB)
-  /**
-   * Reorders a todo within a quadrant and persists the new order to the database.
-   * - Used for intra-quadrant drag-and-drop.
-   * - Updates the order field for all todos in the quadrant to match their new position.
-   */
-  const reorderTodo = useCallback(async (todoId: string, toQuadrant: QuadrantKey, toIndex: number) => {
-    setTodos(prev => {
-      const filtered = prev.filter((t) => t.quadrant === toQuadrant && !t.completed);
-      const other = prev.filter((t) => t.quadrant !== toQuadrant || t.completed);
-      const fromIndex = filtered.findIndex((t) => t.id === todoId);
-      if (fromIndex === -1) return prev;
-      const [moved] = filtered.splice(fromIndex, 1);
-      filtered.splice(toIndex, 0, moved);
-      // Update order field for all todos in this quadrant
-      // The backend PATCH will persist the new order values
-      const updates = filtered.map((t, idx) => ({ id: t.id, order: idx }));
-      fetch('/api/todos', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ updates }),
-      });
-      return [...other, ...filtered];
-    });
-  }, []);
+    await performOptimisticUpdate<Todo>(
+      // Optimistic update
+      prev => prev.map(t => t.id === id ? { ...t, order: newOrder } : t),
+      // API call
+      () => apiClient.updateTodo({
+        ...todo,
+        order: newOrder
+      })
+    );
+  }, [todos, performOptimisticUpdate]);
 
-  /**
-   * Reorders all todos in a quadrant and persists the new order to the database.
-   * - Used after intra-quadrant reordering or after a cross-quadrant move (to place the moved todo at the end).
-   * - Ensures the order field is always correct and unique within the quadrant.
-   * - The backend PATCH will persist the new order values.
-   */
-  const reorderTodosInQuadrant = useCallback(async (quadrant: QuadrantKey, newOrder: Todo[]) => {
-    setTodos(prev => {
-      const others = prev.filter((t) => t.quadrant !== quadrant);
-      // Update order field for all todos in this quadrant
-      const updates = newOrder.map((t, idx) => ({ id: t.id, order: idx }));
-      fetch('/api/todos', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ updates }),
-      });
-      return [...others, ...newOrder];
-    });
-  }, []);
+  // Reorder todos within a quadrant
+  const reorderTodosInQuadrant = useCallback(async (quadrant: QuadrantKey, todos: Todo[]) => {
+    try {
+      // Optimistic update
+      updateTodosOptimistically(prev =>
+        prev.map(t => {
+          const updated = todos.find(updated => updated.id === t.id);
+          return updated ? { ...t, order: updated.order } : t;
+        })
+      );
+
+      // API call
+      const response = await apiClient.updateTodos(
+        todos.map(todo => ({
+          id: todo.id,
+          order: todo.order,
+          completedAt: todo.completedAt || null
+        }))
+      );
+
+      if (response.error) {
+        throw new ApiException(response.error.code, response.error.message);
+      }
+    } catch (error) {
+      handleApiError(error);
+    }
+  }, [updateTodosOptimistically, handleApiError]);
+
+  // Permanently delete todo
+  const permanentlyDeleteTodo = useCallback(async (id: string) => {
+    try {
+      // Optimistic update
+      updateTodosOptimistically(prev => prev.filter(t => t.id !== id));
+
+      const response = await apiClient.deleteTodo(id);
+      if (response.error) {
+        throw new ApiException(response.error.code, response.error.message);
+      }
+    } catch (error) {
+      handleApiError(error);
+    }
+  }, [updateTodosOptimistically, handleApiError]);
 
   const value = useMemo(() => ({
     quadrants,
-    finished: todos.filter(t => t.completed).sort((a, b) => a.order - b.order),
+    finished: todos.filter(t => t.completed).sort((a, b) => {
+      if (a.completedAt && b.completedAt) {
+        return new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime();
+      }
+      return 0;
+    }),
     addTodo,
-    deleteTodo: markCompleted, // soft delete (mark as completed)
+    deleteTodo,
     permanentlyDeleteTodo,
     restoreTodo,
     toggleTodo,
@@ -435,7 +583,25 @@ export function TodoProvider({ children, initialTodos = [] }: { children: React.
     pendingMove,
     setPendingMove,
     setTodos,
-  }), [quadrants, todos, addTodo, markCompleted, permanentlyDeleteTodo, restoreTodo, toggleTodo, toggleWaiting, updateTodoText, updateTodoDueDate, updateTodoNote, moveTodo, reorderTodo, reorderTodosInQuadrant, pendingMove, setPendingMove, setTodos]);
+  }), [
+    quadrants,
+    todos,
+    addTodo,
+    deleteTodo,
+    permanentlyDeleteTodo,
+    restoreTodo,
+    toggleTodo,
+    toggleWaiting,
+    updateTodoText,
+    updateTodoDueDate,
+    updateTodoNote,
+    moveTodo,
+    reorderTodo,
+    reorderTodosInQuadrant,
+    pendingMove,
+    setPendingMove,
+    setTodos,
+  ]);
 
   return <TodoContext.Provider value={value}>{children}</TodoContext.Provider>;
 }
@@ -446,8 +612,8 @@ export function TodoProvider({ children, initialTodos = [] }: { children: React.
  */
 export function useTodo() {
   const context = useContext(TodoContext);
-  if (context === undefined) {
-    throw new Error("useTodo must be used within a TodoProvider");
+  if (!context) {
+    throw new Error('useTodo must be used within a TodoProvider');
   }
   return context;
 }

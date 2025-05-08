@@ -18,6 +18,7 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/Tooltip";
 import { format } from "date-fns";
 import { QUADRANT_CONFIGS } from "@/constants/quadrants";
+import { DraggableAttributes } from '@dnd-kit/core';
 
 /**
  * TodoItem Component
@@ -57,18 +58,18 @@ import { QUADRANT_CONFIGS } from "@/constants/quadrants";
  *    - Screen reader friendly structure
  */
 interface TodoItemProps {
-  todo: Todo;                    // The todo item data
-  quadrant: QuadrantKey;         // Current quadrant location
-  onDragStart: (todo: Todo) => (e: React.DragEvent<HTMLDivElement>) => void;  // Drag start handler
-  onDragEnd: (e: React.DragEvent<HTMLDivElement>) => void;        // Drag end handler
-  onDrop: (e: React.DragEvent<HTMLDivElement>) => void;           // Drop handler
-  onDragOver: (e: React.DragEvent<HTMLDivElement>) => void;       // Drag over handler
-  onDragLeave: (e: React.DragEvent<HTMLDivElement>) => void;      // Drag leave handler
-  onDelete: (id: string) => void;                                 // Delete handler
-  onUpdateText: (id: string, text: string) => void;               // Text update handler
-  grabHandleProps?: any;                                          // Props for drag handle
-  onRestore?: () => void;                                         // Optional restore handler
-  isOverlay?: boolean;                                           // Optional: true if rendered in DragOverlay
+  todo: Todo;
+  quadrant: QuadrantKey;
+  onDragStart: (todo: Todo) => (e: React.DragEvent<HTMLDivElement>) => void;
+  onDragEnd: (e: React.DragEvent<HTMLDivElement>) => void;
+  onDrop: (e: React.DragEvent<HTMLDivElement>) => void;
+  onDragOver: (e: React.DragEvent<HTMLDivElement>) => void;
+  onDragLeave: (e: React.DragEvent<HTMLDivElement>) => void;
+  onDelete: (id: string) => void;
+  onUpdateText: (id: string, text: string) => void;
+  grabHandleProps?: DraggableAttributes;
+  onRestore?: () => void;
+  isOverlay?: boolean;
 }
 
 /**
@@ -76,16 +77,16 @@ interface TodoItemProps {
  * Organized by interaction type and state
  */
 const iconStyles = {
-  base: "p-1.5 rounded-full transition-all duration-300 border border-transparent flex items-center justify-center",
+  base: "p-1 w-6 h-6 rounded-full border border-transparent inline-flex items-center justify-center transform transition-transform duration-200",
   active: {
-    calendar: "text-blue-500 bg-blue-100/80 hover:bg-blue-200/80 hover:border-blue-300 transform hover:scale-[1.25]",
-    note: "text-purple-500 bg-purple-100/80 hover:bg-purple-200/80 hover:border-purple-300 transform hover:scale-[1.25]",
-    waiting: "text-orange-500 bg-orange-100/80 hover:bg-orange-200/80 hover:border-orange-300 transform hover:scale-[1.25]",
-    check: "text-green-600 transform hover:scale-[1.25]",
-    delete: "text-red-500 transform hover:scale-[1.25]",
+    calendar: "text-blue-500 bg-blue-100/80 hover:bg-blue-200/80 hover:border-blue-300 transform hover:scale-125",
+    note: "text-purple-500 bg-purple-100/80 hover:bg-purple-200/80 hover:border-purple-300 transform hover:scale-125",
+    waiting: "text-orange-500 bg-orange-100/80 hover:bg-orange-200/80 hover:border-orange-300 transform hover:scale-125",
+    check: "text-green-600 transform hover:scale-125",
+    delete: "text-red-500 transform hover:scale-125",
   },
-  inactive: "text-gray-400 hover:bg-gray-100/80 transform hover:scale-[1.25]",
-  inactiveWithScale: "text-gray-400 hover:bg-gray-100/80 transform hover:scale-[1.25]",
+  inactive: "text-gray-400 hover:bg-gray-100/80 transform hover:scale-125",
+  inactiveWithScale: "text-gray-400 hover:bg-gray-100/80 transform hover:scale-125",
   glow: {
     calendar: "drop-shadow-[0_0_2px_rgba(59,130,246,0.2)]",
     note: "drop-shadow-[0_0_2px_rgba(168,85,247,0.2)]",
@@ -481,7 +482,7 @@ export default function TodoItem({
     <div
       ref={itemRef}
       data-todo-id={todo.id}
-      className={`group relative flex items-center gap-2 py-1 ${isOverlay ? "" : "px-1"} rounded-lg transition-all duration-200 
+      className={`group relative flex items-center gap-2 py-1 ${isOverlay ? "px-0" : "px-2"} rounded-lg transition-all duration-200 
         ${isOverlay ? "w-full" : isDragging ? "w-full" : "w-[95%] mx-auto"}
         ${isDragging || isOverlay ? "opacity-50 scale-95 bg-white" : "bg-white hover:bg-gray-100"}
         ${todo.completed ? "opacity-50" : ""}`}
@@ -507,31 +508,31 @@ export default function TodoItem({
       {todo.completed ? (
         <button
           onClick={handleRestore}
-          className="p-1.5 rounded-full border border-transparent transition-all duration-300 flex-shrink-0 transform hover:scale-[1.25]"
+          className={`${iconStyles.base} ${iconStyles.active.check} hover:scale-125`}
           aria-label="Restore task"
           draggable={false}
         >
           {showCheckBig ? (
-            <CircleCheckBig className="w-4 h-4 text-green-700" />
+            <CircleCheckBig className="w-full h-full text-green-700" />
           ) : showCircle ? (
-            <Circle className="w-4 h-4 text-green-700" />
+            <Circle className="w-full h-full text-green-700" />
           ) : (
-            <CircleCheckBig className="w-4 h-4 text-green-700" />
+            <CircleCheckBig className="w-full h-full text-green-700" />
           )}
         </button>
       ) : (
         <button
           onClick={handleFinish}
-          className={`${iconStyles.base} ${iconStyles.active.check}`}
+          className={`${iconStyles.base} ${iconStyles.active.check} hover:scale-125`}
           aria-label={todo.completed ? "Mark as incomplete" : "Mark as complete"}
           draggable={false}
         >
           {showCheckBig ? (
-            <CircleCheckBig className="w-4 h-4 text-green-700" />
+            <CircleCheckBig className="w-full h-full text-green-700" />
           ) : todo.completed ? (
-            <CircleCheck className="w-4 h-4" />
+            <CircleCheck className="w-full h-full" />
           ) : (
-            <Circle className="w-4 h-4" />
+            <Circle className="w-full h-full" />
           )}
         </button>
       )}
@@ -545,16 +546,15 @@ export default function TodoItem({
             onChange={handleTextChange}
             onBlur={handleTextBlur}
             onKeyDown={handleKeyDown}
-            className="w-full px-1.5 py-0 text-gray-900 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200 pointer-events-auto"
+            className="w-full px-1.5 py-0 text-gray-900 border border-blue-300 rounded focus:outline-none focus:border-blue-500 transition-colors duration-200 pointer-events-auto"
             autoFocus
-            draggable={false}
           />
         ) : (
           <div
             onClick={handleTextClick}
             className={`block w-full px-1.5 py-0 cursor-default truncate
               ${todo.completed ? "text-gray-400" : "text-gray-900"} 
-              transition-all duration-200 rounded-md ${!todo.completed ? "border border-transparent hover:border-gray-300" : ""} pointer-events-auto`}
+              transition-all duration-200 rounded-md ${!todo.completed ? "border border-transparent hover:border-blue-300" : ""} pointer-events-auto`}
             draggable={false}
           >
             {todo.text}

@@ -8,12 +8,27 @@ import { useTodo } from "@/context/TodoContext";
 import { useDroppable, useDndContext } from "@dnd-kit/core";
 
 /**
- * Quadrant
- *
+ * Quadrant Component
+ * 
+ * A container for a group of related todos, implementing the Eisenhower Matrix concept.
+ * Each quadrant has its own visual style and behavior.
+ * 
+ * Features:
  * - Displays a list of todos for a specific quadrant
  * - Handles drag-and-drop for moving/reordering todos
  * - Applies quadrant-specific styles and layout
  * - Responsive: scrollable on desktop, natural height on mobile
+ * 
+ * Drag and Drop:
+ * - Supports both intra-quadrant reordering and cross-quadrant moves
+ * - Shows visual feedback during drag operations
+ * - Maintains proper order after moves
+ * 
+ * Props:
+ * - todos: List of todos to display
+ * - onDrop: Callback for when a todo is dropped
+ * - quadrant: The quadrant's identifier
+ * - config: Visual and behavioral configuration
  */
 
 interface QuadrantProps {
@@ -48,14 +63,17 @@ export function Quadrant({
     reorderTodosInQuadrant(quadrant, newOrder);
   };
 
-  // Robustly handle cross-quadrant moves using pendingMove
   /**
    * useEffect: Handles robust, race-condition-free cross-quadrant moves.
-   * - When a todo is moved to this quadrant (pendingMove is set),
-   *   this effect detects the new todo in the quadrant's list.
-   * - It appends the moved todo to the end, reorders all todos,
-   *   and persists the new order to the backend.
-   * - This ensures the moved todo is always last and order is always correct.
+   * 
+   * When a todo is moved to this quadrant (pendingMove is set):
+   * 1. Finds the moved todo in the quadrant's list
+   * 2. If not completed, ensures it's at the end of the list
+   * 3. Scrolls to show the new todo
+   * 4. Clears the pending move state
+   * 
+   * This ensures the moved todo is always last and order is always correct,
+   * even with rapid moves or race conditions.
    */
   useEffect(() => {
     if (pendingMove && pendingMove.toQuadrant === quadrant) {
@@ -83,11 +101,13 @@ export function Quadrant({
     }
   }, [todos, quadrant, pendingMove, reorderTodosInQuadrant, setPendingMove]);
 
-  // Handler for dropping a todo into this quadrant
   /**
    * Handles drop events for drag-and-drop.
-   * - Intra-quadrant: Immediately reorders the todo to the end and persists order.
-   * - Cross-quadrant: Calls moveTodo, which triggers the useEffect above to robustly reorder after state updates.
+   * 
+   * Two scenarios:
+   * 1. Intra-quadrant: Immediately reorders the todo to the end and persists order
+   * 2. Cross-quadrant: Calls moveTodo, which triggers the useEffect above to
+   *    robustly reorder after state updates
    */
   const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
     if (active) {
@@ -125,7 +145,7 @@ export function Quadrant({
     >
       {/* Header: title and subtitle for the quadrant */}
       <div className={`px-4 py-1 px-2 text-center flex-shrink-0 ${config.headerBgColor} backdrop-blur-sm relative z-[1] rounded-t-lg`}>
-        <h2 className="title text-lg tracking-wide">{config.title}</h2>
+        <h2 className="title text-lg">{config.title}</h2>
         <p className="subtitle text-sm text-gray-600">{config.subtitle}</p>
         <div className="border-b border-gray-400 mx-1 mt-1" />
       </div>

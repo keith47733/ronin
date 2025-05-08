@@ -7,6 +7,7 @@ import { useTodo } from "@/context/TodoContext";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { QuadrantKey } from "@/types/todo";
 import { QUADRANT_CONFIGS } from "@/constants/quadrants";
+import { Todo } from "@/types/todo";
 
 /**
  * MobileLayout Component
