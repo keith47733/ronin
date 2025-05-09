@@ -78,20 +78,20 @@ export function TodoList() {
           - Clear visual hierarchy */}
       <div className="shrink-0 pt-[2px] pb-[2px]">
         <form onSubmit={handleSubmit} className="w-full">
-          <div className="flex space-x-2 items-center pb-2">
+          <div className="flex space-x-4 items-center pb-2">
             <input
               type="text"
               value={newTodo}
               onChange={(e) => setNewTodo(e.target.value)}
               placeholder="Add a new task..."
-              className="border  border-gray-400 flex-1 px-4 py-2 pb-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+              className="border border-gray-400 flex-1 px-4 py-2 pb-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-700 focus:border-slate-700"
               autoFocus
             />
             <button
               type="submit"
-              className="px-4 py-2 pb-2 bg-red-500 text-white font-bold rounded-full hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-4 py-2 bg-slate-700 hover:bg-slate-800 text-white text-base font-bold rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              ADD
+              Add Task
             </button>
           </div>
           <div className="border-b border-gray-400 bg-white/50 mt-2" />

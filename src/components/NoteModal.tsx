@@ -69,21 +69,21 @@ export default function NoteModal({
       isOpen={isOpen}
       onClose={onClose}
       title="ADD NOTES"
-      className="w-[24rem]"
+      className="w-[400px]"
       backgroundClassName="bg-white"
     >
-      <div className="p-2 pb-0 bg-white">
+      <div className="flex flex-col m-4">
         <textarea
           value={note ?? ""}
           onChange={(e) => setNote(e.target.value)}
-          className="w-full h-[120px] max-h-[120px] p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
+          className="mb-6 p-2 h-[120px] border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-slate-700 focus:border-slate-700 resize-none"
           placeholder="Add a note..."
           autoFocus
         />
-        <div className="mt-5 flex justify-end">
+        <div className="flex justify-end">
           <button
             onClick={() => onSave(note)}
-            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="px-5 py-2 bg-slate-700 hover:bg-slate-800 text-base text-white font-bold rounded-full"
           >
             Save
           </button>

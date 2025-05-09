@@ -33,16 +33,15 @@ export default function FinishedButtonInHeader() {
       ref={finishedButtonRef}
       variant="ghost"
       onClick={handleOpenFinished}
-      className="shadow-lg shadow-green-500/50 mt-2 bg-green-500 border-2 border-gray-300 text-white font-ronin text-5xl font-bold p-3 hover:bg-green-600 shadow-lg relative"
-      style={{ borderRadius: 9999 }}
+      className="shadow-lg mt-2 mr-2 bg-slate-700 hover:bg-slate-800 text-white font-bold text-5xl p-3 rounded-full relative"
       aria-label="Show finished tasks"
     >
       <div className="relative">
         <CircleCheckBig className="h-7 w-7" />
         {/* Badge shows the number of finished tasks */}
         <Badge
-          className="absolute bg-red-600 font-ronin font-light text-sm text-white -top-4 -right-3 p-2 pt-3 min-w-[1.25rem] h-6 flex items-center justify-center rounded-full"
-          variant="destructive"
+          className="absolute bg-green-600 text-white font-bold text-sm -top-5 -right-4 p-2 min-w-[1.25rem] h-6 flex items-center justify-center rounded-full"
+          variant="default"
         >
           {finished.length}
         </Badge>

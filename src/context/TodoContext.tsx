@@ -27,7 +27,7 @@ import { ApiException, ApiResponse } from '@/types/api';
 interface TodoContextType {
   quadrants: Record<QuadrantKey, Todo[]>; // Active todos organized by quadrant
   finished: Todo[]; // Completed todos in the finished list
-  addTodo: (text: string, quadrant: QuadrantKey) => Promise<void>;
+  addTodo: (text: string, quadrant: QuadrantKey, dueDate?: Date | null) => Promise<void>;
   deleteTodo: (id: string) => Promise<void>;
   permanentlyDeleteTodo: (id: string) => Promise<void>;
   restoreTodo: (id: string) => Promise<void>;
@@ -204,7 +204,7 @@ export function TodoProvider({ children, initialTodos = [] }: { children: React.
   }, [updateTodosOptimistically, handleApiError]);
 
   // Add todo
-  const addTodo = useCallback(async (text: string, quadrant: QuadrantKey) => {
+  const addTodo = useCallback(async (text: string, quadrant: QuadrantKey, dueDate?: Date | null) => {
     const tempId = `temp-${Date.now()}`;
     const now = new Date();
     const newTodo: Todo = {
@@ -215,7 +215,7 @@ export function TodoProvider({ children, initialTodos = [] }: { children: React.
       isWaiting: false,
       createdAt: now,
       order: todos.filter(t => t.quadrant === quadrant).length,
-      dueDate: null,
+      dueDate: dueDate ?? null,
       note: null,
       completedAt: null,
       deleted: null
@@ -231,7 +231,7 @@ export function TodoProvider({ children, initialTodos = [] }: { children: React.
         completed: false,
         isWaiting: false,
         order: todos.filter(t => t.quadrant === quadrant).length,
-        dueDate: null,
+        dueDate: dueDate ? dueDate.toISOString() : null,
         note: null,
         completedAt: null,
         deleted: null
@@ -360,21 +360,21 @@ export function TodoProvider({ children, initialTodos = [] }: { children: React.
     try {
       const todo = todos.find(t => t.id === id);
       if (!todo) return;
-
+      if (todo.id.startsWith('temp-')) {
+        console.warn('Skipping update for optimistic todo with temp id:', todo.id);
+        return;
+      }
       const isCompleting = !todo.completed;
       const completedAt = isCompleting ? new Date().toISOString() : null;
-
       // Optimistic update
       updateTodosOptimistically(prev =>
         prev.map(t => t.id === id ? { ...t, completed: isCompleting, completedAt } : t)
       );
-
       const response = await apiClient.updateTodo({
         ...todo,
         completed: isCompleting,
         completedAt,
       });
-
       if (response.error) {
         throw new ApiException(response.error.code, response.error.message);
       }
@@ -388,17 +388,18 @@ export function TodoProvider({ children, initialTodos = [] }: { children: React.
     try {
       const todo = todos.find(t => t.id === id);
       if (!todo) return;
-
+      if (todo.id.startsWith('temp-')) {
+        console.warn('Skipping update for optimistic todo with temp id:', todo.id);
+        return;
+      }
       // Optimistic update
       updateTodosOptimistically(prev =>
         prev.map(t => t.id === id ? { ...t, isWaiting: !t.isWaiting } : t)
       );
-
       const response = await apiClient.updateTodo({
         ...todo,
         isWaiting: !todo.isWaiting,
       });
-
       if (response.error) {
         throw new ApiException(response.error.code, response.error.message);
       }
@@ -413,17 +414,18 @@ export function TodoProvider({ children, initialTodos = [] }: { children: React.
     try {
       const todo = todos.find(t => t.id === id);
       if (!todo) return;
-
+      if (todo.id.startsWith('temp-')) {
+        console.warn('Skipping update for optimistic todo with temp id:', todo.id);
+        return;
+      }
       // Optimistic update
       updateTodosOptimistically(prev =>
         prev.map(t => t.id === id ? { ...t, text } : t)
       );
-
       const response = await apiClient.updateTodo({
         id,
         text,
       });
-
       if (response.error) {
         throw new ApiException(response.error.code, response.error.message);
       }
@@ -437,17 +439,18 @@ export function TodoProvider({ children, initialTodos = [] }: { children: React.
     try {
       const todo = todos.find(t => t.id === id);
       if (!todo) return;
-
+      if (todo.id.startsWith('temp-')) {
+        console.warn('Skipping update for optimistic todo with temp id:', todo.id);
+        return;
+      }
       // Optimistic update
       updateTodosOptimistically(prev =>
         prev.map(t => t.id === id ? { ...t, dueDate: date } : t)
       );
-
       const response = await apiClient.updateTodo({
         ...todo,
-        dueDate: date,
+        dueDate: date ? date.toISOString() : null,
       });
-
       if (response.error) {
         throw new ApiException(response.error.code, response.error.message);
       }
@@ -461,17 +464,18 @@ export function TodoProvider({ children, initialTodos = [] }: { children: React.
     try {
       const todo = todos.find(t => t.id === id);
       if (!todo) return;
-
+      if (todo.id.startsWith('temp-')) {
+        console.warn('Skipping update for optimistic todo with temp id:', todo.id);
+        return;
+      }
       // Optimistic update
       updateTodosOptimistically(prev =>
         prev.map(t => t.id === id ? { ...t, note } : t)
       );
-
       const response = await apiClient.updateTodo({
         ...todo,
         note,
       });
-
       if (response.error) {
         throw new ApiException(response.error.code, response.error.message);
       }

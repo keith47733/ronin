@@ -19,6 +19,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { format } from "date-fns";
 import { QUADRANT_CONFIGS } from "@/constants/quadrants";
 import { DraggableAttributes } from '@dnd-kit/core';
+import { isToday, isTomorrow, isPast, differenceInCalendarDays } from "date-fns";
 
 /**
  * TodoItem Component
@@ -77,7 +78,7 @@ interface TodoItemProps {
  * Organized by interaction type and state
  */
 const iconStyles = {
-  base: "p-1 w-6 h-6 rounded-full border border-transparent inline-flex items-center justify-center transform transition-transform duration-200",
+  base: "p-1 w-6 h-6 rounded-full inline-flex items-center justify-center transform transition-transform duration-200",
   active: {
     calendar: "text-blue-500 bg-blue-100/80 hover:bg-blue-200/80 hover:border-blue-300 transform hover:scale-125",
     note: "text-purple-500 bg-purple-100/80 hover:bg-purple-200/80 hover:border-purple-300 transform hover:scale-125",
@@ -98,6 +99,31 @@ const iconStyles = {
     waiting: "bg-orange-50 text-orange-800 [&>div:last-child]:border-t-orange-50 [&>div:last-child]:bg-orange-50",
   },
 };
+
+const dueDateColorStyles = {
+  none:  "text-blue-500 bg-blue-100/80 hover:bg-blue-200/80",
+  future: "text-blue-500 bg-blue-100/80 hover:bg-blue-200/80",
+  tomorrow: "text-yellow-500 bg-yellow-100/80 hover:bg-yellow-200/80",
+  today: "text-green-500 bg-green-100/80 hover:bg-green-200/80",
+  overdue: "text-red-500 bg-red-100/80 hover:bg-red-200/80",
+};
+
+const dueDateTooltipStyles = {
+  none:  "bg-blue-50 text-blue-800 border-t-blue-50",
+  future: "bg-blue-50 text-blue-800 border-t-blue-50",
+  tomorrow: "bg-yellow-50 text-yellow-800 border-t-yellow-50",
+  today: "bg-green-50 text-green-800 border-t-green-50",
+  overdue: "bg-red-50 text-red-800 border-t-red-50",
+};
+
+function getDueDateStatus(dueDate: Date | null) {
+  if (!dueDate) return "none";
+  if (isToday(dueDate)) return "today";
+  if (isTomorrow(dueDate)) return "tomorrow";
+  if (isPast(dueDate) && !isToday(dueDate)) return "overdue";
+  if (differenceInCalendarDays(dueDate, new Date()) >= 2) return "future";
+  return "none";
+}
 
 /**
  * Helper to get quadrant config
@@ -478,6 +504,8 @@ export default function TodoItem({
     return document.querySelector(`[data-quadrant="${quadrantKey}"]`);
   };
 
+  const dueDateStatus = getDueDateStatus(todo.dueDate);
+
   return (
     <div
       ref={itemRef}
@@ -591,16 +619,19 @@ export default function TodoItem({
                   <TooltipTrigger asChild>
                     <button
                       onClick={handleDueDateClick}
-                      className={`${iconStyles.base} ${
-                        todo.dueDate ? iconStyles.active.calendar : iconStyles.inactive
-                      } ${todo.dueDate ? iconStyles.glow.calendar : ""}`}
+                      className={`
+                        ${iconStyles.base}
+                        ${dueDateColorStyles[dueDateStatus]}
+                        hover:scale-125
+                        ${todo.completed ? "opacity-50" : ""}
+                      `}
                       disabled={todo.completed}
                       draggable={false}
                     >
                       <CalendarIcon size={14} />
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent className={`min-w-[120px] text-center ${iconStyles.tooltip.calendar}`} draggable={false}>
+                  <TooltipContent className={`min-w-[120px] text-center ${dueDateTooltipStyles[dueDateStatus]}`} draggable={false}>
                     {format(todo.dueDate, "MMM d, yyyy")}
                   </TooltipContent>
                 </Tooltip>
@@ -608,9 +639,12 @@ export default function TodoItem({
             ) : (
               <button
                 onClick={handleDueDateClick}
-                className={`${iconStyles.base} ${
-                  todo.dueDate ? iconStyles.active.calendar : iconStyles.inactiveWithScale
-                } ${todo.dueDate ? iconStyles.glow.calendar : ""}`}
+                className={`
+                  ${iconStyles.base}
+                  ${iconStyles.inactiveWithScale}
+                  hover:scale-125
+                  ${todo.completed ? "opacity-50" : ""}
+                `}
                 disabled={todo.completed}
                 draggable={false}
               >

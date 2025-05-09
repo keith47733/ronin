@@ -62,14 +62,14 @@ export function DesktopLayout() {
       <div className="w-1/3 h-full">
         <div className="h-full relative border border-gray-400 rounded-lg p-2"> 
           <TodoList />
-            {/* Centered Ronin Logo in Right Panel */}
-            <div className="absolute inset-0 flex items-center justify-center z-[2000] pointer-events-none pt-[20%] p-[5%]">
+            {/* Centered Ronin Logo in Left Panel */}
+            <div className="absolute inset-0 flex items-center justify-center z-[3000] pointer-events-none pt-[20%] p-[5%]">
               <Image
                   src="/ronin-face.png"
                   alt="Ronin Face"
                   width={550}
                   height={700}
-                  style={{ width: '80%', height: 'auto', opacity: 0.025 }}
+                  style={{ width: '80%', height: 'auto', opacity: 0.04 }}
                   className="blur-xs"
                   priority
                 />
@@ -108,13 +108,13 @@ export function DesktopLayout() {
           <div className="absolute top-1/2 left-2 right-2 h-[1px] bg-gray-400 -translate-y-1/2 z-10 pointer-events-none"></div>
         
           {/* Centered Katana Logo in Left Panel */}
-          <div className="absolute inset-0 flex items-center justify-center z-[2000] pointer-events-none p-[2%]">
+          <div className="absolute inset-0 flex items-center justify-center z-[3000] pointer-events-none p-[2%]">
             <Image
               src="/katana.png"
               alt="Katana Icon"
               width={580}
               height={1300}
-              style={{ width: 'auto', height: '98%', opacity: 0.02 }}
+              style={{ width: 'auto', height: '98%', opacity: 0.04 }}
               className="rotate-[30deg] blur-xs"
               priority
             />

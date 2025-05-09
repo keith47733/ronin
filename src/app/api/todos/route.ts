@@ -46,7 +46,7 @@ export async function GET(): Promise<NextResponse<ApiResponse<Todo[]>>> {
     const todos = await prisma.todo.findMany({
       orderBy: { createdAt: "desc" },
     });
-    return jsonResponse(todos.map(transformPrismaTodo));
+    return jsonResponse(createApiResponse(todos.map(transformPrismaTodo)));
   } catch (error) {
     console.error('Error fetching todos:', error);
     return jsonResponse(
@@ -105,10 +105,8 @@ export async function PUT(request: Request): Promise<NextResponse<ApiResponse<To
     if (body.text !== undefined) updateData.text = body.text;
     if (body.completed !== undefined) {
       updateData.completed = body.completed;
-      // Only set completedAt if explicitly provided or when completing
-      if (body.completedAt !== undefined) {
-        updateData.completedAt = body.completedAt ? new Date(body.completedAt) : null;
-      } else if (body.completed) {
+      // Always set completedAt based on completed status
+      if (body.completed) {
         updateData.completedAt = new Date();
       } else {
         updateData.completedAt = null;

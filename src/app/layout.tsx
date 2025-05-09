@@ -33,9 +33,10 @@ export default async function RootLayout({ children }: RootLayoutProps) {
     ...todo,
     quadrant: todo.quadrant as import("@/types/todo").QuadrantKey,
     createdAt: new Date(todo.createdAt),
-    dueDate: todo.dueDate ? new Date(todo.dueDate) : undefined,
-    note: todo.note ?? undefined,
-    deleted: todo.deleted ?? undefined,
+    dueDate: todo.dueDate ? new Date(todo.dueDate) : null,
+    completedAt: todo.completedAt ? new Date(todo.completedAt).toISOString() : null,
+    note: todo.note ?? null,
+    deleted: todo.deleted ?? null,
   }));
 
   // The returned JSX is the HTML structure for every page
