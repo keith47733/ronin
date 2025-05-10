@@ -79,6 +79,14 @@ const useQuadrants = (todos: Todo[]): QuadrantState => {
         initialQuadrants[todo.quadrant].push(todo);
       }
     });
+
+    // Sort todos in each quadrant by movedAt
+    Object.keys(initialQuadrants).forEach((key) => {
+      initialQuadrants[key as QuadrantKey].sort((a, b) => 
+        new Date(a.movedAt).getTime() - new Date(b.movedAt).getTime()
+      );
+    });
+
     return initialQuadrants;
   }, [todos]);
 };
@@ -87,8 +95,8 @@ const useQuadrants = (todos: Todo[]): QuadrantState => {
 function serializeTodos(todos: Todo[]): any[] {
   return todos.map((todo) => ({
     ...todo,
-    createdAt: todo.createdAt instanceof Date ? todo.createdAt.toISOString() : todo.createdAt,
-    dueDate: todo.dueDate instanceof Date ? todo.dueDate.toISOString() : todo.dueDate || null,
+    createdAt: todo.createdAt,
+    dueDate: todo.dueDate,
   }));
 }
 
@@ -99,8 +107,8 @@ function deserializeTodos(raw: any[]): Todo[] {
     try {
       const deserialized = {
         ...todo,
-        createdAt: todo.createdAt ? new Date(todo.createdAt) : new Date(),
-        dueDate: todo.dueDate ? new Date(todo.dueDate) : null,
+        createdAt: todo.createdAt,
+        dueDate: todo.dueDate,
       };
       // Basic validation: must have id and text
       if (deserialized.id && deserialized.text) {
@@ -207,15 +215,17 @@ export function TodoProvider({ children, initialTodos = [] }: { children: React.
   const addTodo = useCallback(async (text: string, quadrant: QuadrantKey, dueDate?: Date | null) => {
     const tempId = `temp-${Date.now()}`;
     const now = new Date();
+    
     const newTodo: Todo = {
       id: tempId,
       text,
       quadrant,
       completed: false,
       isWaiting: false,
-      createdAt: now,
-      order: todos.filter(t => t.quadrant === quadrant).length,
-      dueDate: dueDate ?? null,
+      createdAt: now.toISOString(),
+      movedAt: now.toISOString(),
+      order: 0, // We don't need this anymore but keeping for backward compatibility
+      dueDate: dueDate ? dueDate.toISOString() : null,
       note: null,
       completedAt: null,
       deleted: null
@@ -230,7 +240,8 @@ export function TodoProvider({ children, initialTodos = [] }: { children: React.
         quadrant,
         completed: false,
         isWaiting: false,
-        order: todos.filter(t => t.quadrant === quadrant).length,
+        order: 0,
+        movedAt: now.toISOString(),
         dueDate: dueDate ? dueDate.toISOString() : null,
         note: null,
         completedAt: null,
@@ -241,7 +252,7 @@ export function TodoProvider({ children, initialTodos = [] }: { children: React.
         prev.map(t => t.id === tempId ? data : t)
       )
     );
-  }, [todos, performOptimisticUpdate]);
+  }, [performOptimisticUpdate]);
 
   // Mark as completed
   const markCompleted = useCallback(async (id: string) => {
@@ -445,7 +456,7 @@ export function TodoProvider({ children, initialTodos = [] }: { children: React.
       }
       // Optimistic update
       updateTodosOptimistically(prev =>
-        prev.map(t => t.id === id ? { ...t, dueDate: date } : t)
+        prev.map(t => t.id === id ? { ...t, dueDate: date ? date.toISOString() : null } : t)
       );
       const response = await apiClient.updateTodo({
         ...todo,
@@ -486,19 +497,19 @@ export function TodoProvider({ children, initialTodos = [] }: { children: React.
 
   // Move todo
   const moveTodo = useCallback(async (todo: Todo, fromQuadrant: QuadrantKey, toQuadrant: QuadrantKey) => {
+    const now = new Date();
     await performOptimisticUpdate<Todo>(
       // Optimistic update
-      prev => {
-        const filtered = prev.filter(t => t.id !== todo.id);
-        const quadrantTodos = filtered.filter(t => t.quadrant === toQuadrant);
-        const others = filtered.filter(t => t.quadrant !== toQuadrant);
-        const newQuadrant = [...quadrantTodos, { ...todo, quadrant: toQuadrant }];
-        return [...others, ...newQuadrant];
-      },
+      prev => prev.map(t => 
+        t.id === todo.id 
+          ? { ...t, quadrant: toQuadrant, movedAt: now.toISOString() }
+          : t
+      ),
       // API call
       () => apiClient.updateTodo({
         ...todo,
         quadrant: toQuadrant,
+        movedAt: now.toISOString()
       }),
       // Success handler
       () => setPendingMove({ todoId: todo.id, toQuadrant })
@@ -524,20 +535,29 @@ export function TodoProvider({ children, initialTodos = [] }: { children: React.
   // Reorder todos within a quadrant
   const reorderTodosInQuadrant = useCallback(async (quadrant: QuadrantKey, todos: Todo[]) => {
     try {
+      const now = new Date();
+      const activeTodos = todos.filter(todo => !todo.completed);
+      
+      // Update movedAt for all reordered todos
+      const todosWithMovedAt = activeTodos.map(todo => ({
+        ...todo,
+        movedAt: now.toISOString()
+      }));
+
       // Optimistic update
       updateTodosOptimistically(prev =>
         prev.map(t => {
-          const updated = todos.find(updated => updated.id === t.id);
-          return updated ? { ...t, order: updated.order } : t;
+          const updated = todosWithMovedAt.find(updated => updated.id === t.id);
+          return updated ? { ...t, movedAt: updated.movedAt } : t;
         })
       );
 
       // API call
       const response = await apiClient.updateTodos(
-        todos.map(todo => ({
+        todosWithMovedAt.map(todo => ({
           id: todo.id,
-          order: todo.order,
-          completedAt: todo.completedAt || null
+          movedAt: todo.movedAt,
+          completedAt: todo.completedAt
         }))
       );
 

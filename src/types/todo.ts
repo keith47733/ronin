@@ -21,6 +21,7 @@ export type QuadrantKey =
  * @property completed - Whether the todo is marked as finished
  * @property isWaiting - Whether the todo is marked as waiting for someone else
  * @property createdAt - When the todo was created
+ * @property movedAt - When the todo was last moved or reordered
  * @property completedAt - ISO string timestamp of when the todo was completed, or null if not completed
  * @property dueDate - Optional due date for the todo, null if not set
  * @property note - Optional note attached to the todo, null if not set
@@ -35,10 +36,11 @@ export interface Todo {
   text: string;
   completed: boolean;
   isWaiting: boolean;
-  createdAt: Date;
+  createdAt: string;
+  movedAt: string;
   completedAt: string | null;
   quadrant: QuadrantKey;
-  dueDate: Date | null;
+  dueDate: string | null;
   note: string | null;
   deleted: boolean | null;
   order: number;

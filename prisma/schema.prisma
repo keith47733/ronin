@@ -18,7 +18,8 @@ model Todo {
   text              String
   completed         Boolean
   isWaiting         Boolean
-  createdAt         DateTime @default(now())
+  createdAt         DateTime  @default(now())
+  movedAt           DateTime  @default(now())  // When the todo was last moved or reordered
   completedAt       DateTime?  // optional timestamp for when the todo was completed
   dueDate           DateTime?  // optional
   note              String?    // optional
