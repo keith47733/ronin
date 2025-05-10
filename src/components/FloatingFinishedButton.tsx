@@ -33,7 +33,7 @@ export default function FinishedButtonInHeader() {
       ref={finishedButtonRef}
       variant="ghost"
       onClick={handleOpenFinished}
-      className="shadow-lg mt-2 mr-2 bg-slate-700 hover:bg-slate-800 text-white font-bold text-5xl p-3 rounded-full relative"
+      className="shadow-lg mt-2 mr-2 bg-slate-700 hover:bg-slate-800 hover:outline text-white font-bold text-5xl p-3 rounded-full relative"
       aria-label="Show finished tasks"
     >
       <div className="relative">

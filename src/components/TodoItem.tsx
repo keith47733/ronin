@@ -574,7 +574,7 @@ export default function TodoItem({
             onChange={handleTextChange}
             onBlur={handleTextBlur}
             onKeyDown={handleKeyDown}
-            className="w-full px-1.5 py-0 text-gray-900 border border-blue-300 rounded focus:outline-none focus:border-blue-500 transition-colors duration-200 pointer-events-auto"
+            className="w-full px-1.5 py-0 text-gray-900 border border-slate-300 rounded focus:outline-none focus:border-slate-800 transition-colors duration-200 pointer-events-auto"
             autoFocus
           />
         ) : (
